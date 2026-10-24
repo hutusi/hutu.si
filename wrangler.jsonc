@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hutu-si",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-24",
+  // Keep the workers.dev URL for testing until hutu.si resolves; it can be turned off later.
+  "workers_dev": true,
+  "routes": [{ "pattern": "hutu.si", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Only the reserved short-link prefixes run Worker code. Every other path, including
+    // misses (which get dist/404.html), is answered by the asset layer without invoking it.
+    "run_worker_first": ["/a", "/a/*", "/w", "/w/*", "/t", "/t/*"]
+  },
+  "observability": { "enabled": true }
+}
