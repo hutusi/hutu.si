@@ -10,7 +10,8 @@
     "images": "node scripts/images.mjs",
     "og": "node scripts/og.mjs",
     "measure": "node scripts/measure.mjs",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "align": "node scripts/align.mjs"
   },
   "devDependencies": {
     "@capsizecss/core": "4.1.3",

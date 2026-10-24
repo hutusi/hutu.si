@@ -158,7 +158,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .back .body { text-shadow: 0 1px 0 rgba(255, 225, 210, .16), 0 -.6px 0 rgba(50, 8, 0, .4); }
 .main { display: contents; }
-.who { grid-column: 1; grid-row: 2 / 4; align-self: end; display: flex; flex-direction: column; gap: 14px; margin-bottom: var(--who-mb, 0); }
+.who { grid-column: 1; grid-row: 2 / 4; align-self: end; display: flex; flex-direction: column; gap: 14px; }
 .name { font: 500 44px/1 var(--mincho); letter-spacing: .14em; margin-left: var(--name-ml, 0); }
 .name-en { font: 500 43px/1 var(--display); letter-spacing: 0; }
 .role { font-size: 16px; line-height: 1.2; letter-spacing: .04em; color: #6d6157; }
@@ -179,14 +179,16 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .back .k { padding-right: calc(14px - .08em); font-size: 13.5px; letter-spacing: .08em; font-variant-caps: all-small-caps; color: #ecc8b8; }
 
 .social {
-  grid-column: 2; grid-row: 3; justify-self: end; margin-top: var(--social-mt, 18px);
+  grid-column: 2; grid-row: 3; justify-self: end; margin: var(--social-mt, 18px) 0 var(--social-mb, 0);
   display: flex; align-items: baseline; gap: 4px; font-size: 16px; line-height: 1;
 }
-.ic { position: relative; top: calc(14px - .2em); display: flex; align-items: center; height: 28px; padding: 0 6px; transition: color .2s ease; }
-.ic svg { display: block; fill: currentColor; }
-.gh { width: 11.5px; height: 11.5px; }
-.x { width: 10px; height: 10px; }
-.wc { width: 13.5px; height: 13.5px; }
+/* Icon boxes hold no in-flow content, so their baseline is their bottom edge (as in the
+   design): sitting on the email's baseline and nudged down, they centre on its x-height. */
+.ic { position: relative; top: calc(14px - .2em); display: block; width: var(--w); height: 28px; padding: 0 6px; transition: color .2s ease; }
+.ic svg { position: absolute; inset: 0; margin: auto; width: var(--w); height: var(--w); fill: currentColor; }
+.gh { --w: 11.5px; }
+.x { --w: 10px; }
+.wc { --w: 13.5px; }
 .mail { margin-left: 6px; white-space: nowrap; transition: color .2s ease; }
 .mail svg { width: 14px; height: 14px; fill: currentColor; vertical-align: calc(.2em - 7px); margin-right: .3em; }
 .front .social a:hover, .front .wx button:hover { color: var(--cinnabar); }
