@@ -29,16 +29,16 @@ export function paintPaper(c, comp, view, seed) {
   }
 }
 
-// [face selector, layer index, stroke colour, count] for each fibre layer on the card.
+// The card's fibre layers: [face, stroke colour, count, blend, opacity], as in the design.
 const FIBRES = [
-  ['.front', 2, '#5c4a36', 170],
-  ['.front', 3, '#ffffff', 120],
-  ['.back', 2, '#4a120a', 170],
-  ['.back', 3, '#ffe2d6', 110],
+  ['.front', '#5c4a36', 170, 'multiply', 0.42],
+  ['.front', '#ffffff', 120, 'normal', 0.4],
+  ['.back', '#4a120a', 170, 'multiply', 0.4],
+  ['.back', '#ffe2d6', 110, 'normal', 0.16],
 ];
 
 // Short curved fibres over one 620×360 paper tile, as in the design's textures.
-function fibreTile(colour, count, rand) {
+function fibreTile(count, rand) {
   let paths = '';
   for (let i = 0; i < count; i++) {
     const x = rand() * 620;
@@ -53,16 +53,19 @@ function fibreTile(colour, count, rand) {
     const f = (v) => v.toFixed(1);
     paths += `<path d='M${f(x)} ${f(y)}Q${f(cx)} ${f(cy)} ${f(ex)} ${f(ey)}' stroke-width='${(0.3 + rand() * 0.5).toFixed(2)}' stroke-opacity='${(0.2 + rand() * 0.45).toFixed(2)}'/>`;
   }
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='620' height='360'><g fill='none' stroke='${colour}' stroke-linecap='round'>${paths}</g></svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' width='620' height='360'><g fill='none' stroke='#000' stroke-linecap='round'>${paths}</g></svg>`;
 }
 
+// Each fibre layer is a flat colour cut out by a mask of strokes. (As a background image it
+// would count as a new "largest contentful paint" seconds after the card has rendered.)
 export function addCardFibres() {
   const rand = createRng(2024);
-  for (const [face, n, colour, count] of FIBRES) {
-    const layer = document.querySelector(`${face} .paper i:nth-child(${n})`);
-    if (!layer) continue;
-    // Over the layer's own noise, so they share its opacity and blend mode as in the design.
-    layer.style.backgroundImage = `${fibreTile(colour, count, rand)}, ${getComputedStyle(layer).backgroundImage}`;
+  for (const [face, colour, count, blend, opacity] of FIBRES) {
+    const paper = document.querySelector(`${face} .paper`);
+    if (!paper) continue;
+    const layer = document.createElement('i');
+    const mask = `url("data:image/svg+xml,${encodeURIComponent(fibreTile(count, rand))}") 0 0 / 620px 360px`;
+    Object.assign(layer.style, { background: colour, mixBlendMode: blend, opacity, webkitMask: mask, mask });
+    paper.append(layer);
   }
 }

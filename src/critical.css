@@ -9,8 +9,8 @@
   --paper: #eae7e1;
   --ink: #2f2823;
   --cinnabar: #a63a2c;
-  --serif: "EB Garamond", "EB Garamond Fallback", "EB Garamond Fallback Noto", "Zhuque Fangsong", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
-  --mincho: "Huiwen Mincho", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+  --serif: "EB Garamond", "EB Garamond Fallback", "EB Garamond Fallback Noto", "Zhuque Fangsong", "Zhuque Fangsong Fallback", serif;
+  --mincho: "Huiwen Mincho", "Huiwen Mincho Fallback", serif;
   --display: "Cormorant Garamond", "Cormorant Fallback", "EB Garamond", serif;
   --mottle: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='620' height='360'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='.012 .02' numOctaves='3' seed='7'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .4 0 0 0 0 .28 0 0 0 .9 -.38'/></filter><rect width='620' height='360' filter='url(%23m)'/></svg>");
   --grain-d: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='t' x='0' y='0'><feTurbulence type='fractalNoise' baseFrequency='1.25' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .36 0 0 0 0 .28 0 0 0 0 .18 0 0 0 3 -1.7'/></filter><rect width='160' height='160' filter='url(%23t)'/></svg>");
@@ -52,7 +52,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   position: absolute; left: 330px; top: 196px; width: 620px; height: 360px;
   perspective: 1500px;
   --z: calc(var(--hover, 0) * .5 + var(--lift, 0));
-  animation: card-in 1.4s cubic-bezier(.16, .84, .24, 1) .25s both, fade-in 1.1s ease .25s both;
+  animation: card-in 1.4s cubic-bezier(.16, .84, .24, 1) both, fade-in 1.1s ease both;
 }
 .card.lift { --lift: 1; }
 .shadow, .contact, .tilt, .flip, .e, .face, .paper, .paper i, .sheen { position: absolute; inset: 0; }
@@ -72,7 +72,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   transform-style: preserve-3d;
   transform: rotateX(calc(var(--rx, 0) * 1deg)) rotateY(calc(var(--ry, 0) * 1deg)) translateZ(calc(var(--hover, 0) * 14px + var(--lift, 0) * 80px));
   transition: transform .6s cubic-bezier(.2, .7, .2, 1);
-  animation: press .75s cubic-bezier(.2, .7, .2, 1) 2.37s;
+  animation: press .75s cubic-bezier(.2, .7, .2, 1) 2.12s;
 }
 .flip { transform-style: preserve-3d; transition: transform .9s cubic-bezier(.45, 0, .2, 1); cursor: pointer; }
 .en .flip { transform: rotateY(180deg); }
@@ -133,7 +133,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* Debossed wordmark and logo seal; offsets come from align.css (measured with the real fonts). */
 .deboss { position: absolute; white-space: nowrap; pointer-events: none; user-select: none; -webkit-user-select: none; line-height: 1; }
 .deboss-lat {
-  right: var(--dbx-r); top: var(--dbx-t);
+  left: var(--dbx-l); top: var(--dbx-t);
   font: 700 118px/1 var(--display); color: #e4d7bd;
   text-shadow: 0 1px 0 rgba(255, 253, 246, .95), 0 -1px 0 rgba(80, 52, 24, .4);
 }
@@ -147,7 +147,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   position: absolute; left: 44px; top: 44px; width: 52px; height: 52px; border-radius: 50%;
   box-shadow: 0 0 0 .5px rgba(50, 30, 15, .32), 0 1px 1.5px rgba(50, 30, 15, .18);
 }
-.front .seal { transform: rotate(-4deg); opacity: .94; animation: stamp .28s cubic-bezier(.55, 0, .8, .2) 2.1s both; }
+.front .seal { transform: rotate(-4deg); opacity: .94; animation: stamp .28s cubic-bezier(.55, 0, .8, .2) 1.85s both; }
 
 /* ---- Card text ---- */
 .body {
@@ -156,7 +156,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .front .body {
   text-shadow: 0 1px 0 rgba(255, 251, 240, .8), 0 -.5px 0 rgba(70, 46, 22, .32), 0 0 .5px rgba(40, 26, 14, .22);
-  animation: ink-in 1.6s ease .8s both, fade-in 1.2s ease .8s both;
+  animation: ink-in 1.6s ease .55s both, fade-in 1.2s ease .55s both;
 }
 .back .body { text-shadow: 0 1px 0 rgba(255, 225, 210, .16), 0 -.6px 0 rgba(50, 8, 0, .4); }
 .main { display: contents; }
@@ -178,7 +178,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .links a:hover { background-size: 100% 1px; background-position: 0 100%; color: var(--cinnabar); }
 .back .links a:hover { color: #fff; }
 .k { text-align: right; padding-right: calc(14px - .16em); font-size: 12.5px; letter-spacing: .16em; color: #74685c; }
-.back .k { padding-right: calc(14px - .08em); font-size: 13.5px; letter-spacing: .08em; font-variant-caps: all-small-caps; color: #ecc8b8; }
+.back .links { grid-template-columns: var(--k-w, auto) auto; }
+.back .k { padding-right: calc(14px - .08em); font: 13.5px "EB Garamond Caps", var(--serif); letter-spacing: .08em; font-variant-caps: all-small-caps; color: #ecc8b8; }
 
 .social {
   grid-column: 2; grid-row: 3; justify-self: end; margin: var(--social-mt, 18px) 0 var(--social-mb, 0);
@@ -253,15 +254,16 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .again:active { text-decoration-color: currentColor; }
 
   /* Front: name, role and links set vertically, right to left. */
-  .front .main { align-self: center; writing-mode: vertical-rl; gap: 28px; }
+  .front .main { align-self: center; writing-mode: vertical-rl; gap: 28px; height: var(--vgroup-h, auto); }
   .front .name { font-size: 38px; margin: 0; }
   .front .role { font-size: 18px; line-height: 1; letter-spacing: .06em; }
   .front .sep { display: none; }
-  .front .sep-v { display: inline; }
+  .front .sep-v { display: inline-block; inline-size: 1em; }
   .front .links { display: flex; flex-direction: column; margin-block: -14px; font-size: 19px; line-height: 1; letter-spacing: .06em; }
   .front .links a { display: block; padding-block: 14px; background: none; }
-  .front .k { padding: 0; margin-inline-end: 10px; font-size: 14px; }
-  .deboss-lat { right: auto; left: var(--dbx-l); font-size: 74px; }
+  /* Two characters and their tracking, fixed so the values don't move when the font swaps in. */
+  .front .k { display: inline-block; inline-size: 2.32em; padding: 0; margin-inline-end: 10px; font-size: 14px; }
+  .deboss-lat { font-size: 74px; }
 
   /* Back: centred column with a two-column link table. */
   .back .main { align-items: center; text-align: center; gap: 12px; }
@@ -274,9 +276,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .deboss-cjk { font-size: 64px; }
 }
 
-/* ---- Intro (skipped on a repeat visit in the same session, and with reduced motion) ---- */
+/* ---- Intro (skipped on a repeat visit in the same session, and with reduced motion) ----
+   The design's timeline, minus its initial 250 ms pause: the card starts appearing with the
+   first paint. */
 @keyframes card-in { from { translate: 0 40px; scale: .96; } }
-@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-in { from { opacity: .01; } }
 @keyframes ink-in { from { filter: blur(8px); } }
 @keyframes stamp { from { transform: scale(1.9) rotate(-18deg); opacity: 0; } }
 @keyframes press { 30% { transform: translateZ(-9.6px); } }

@@ -52,12 +52,19 @@ const SOURCES = {
 // alternates through glyph closure. CJK subsets keep everything (vertical forms need vert/vrt2).
 const LATIN_FEATURES = ['kern', 'liga', 'clig', 'calt', 'ccmp', 'locl', 'mark', 'mkmk', 'smcp', 'c2sc'];
 
+// `cjkFallback` gets a local face with the web font's own vertical metrics, so the baseline
+// doesn't move when the font swaps in. `alias` adds a font-display: block family over the same
+// file, for text whose fallback measures too differently (the small-caps labels): it appears
+// once its font has loaded, which is early since every font is preloaded.
+// local() matches full or PostScript names, not family names.
+const CJK_LOCAL = ['Songti SC Regular', 'STSongti-SC-Regular', 'STSong', 'Noto Serif CJK SC', 'NotoSerifCJKsc-Regular', 'Source Han Serif SC', 'SourceHanSerifSC-Regular', 'SimSun'].map((n) => `local('${n}')`);
 const FONTS = [
-  { key: 'huiwen-mincho', source: 'huiwen', family: 'Huiwen Mincho', weight: 400 },
-  { key: 'zhuque-fangsong', source: 'zhuque', family: 'Zhuque Fangsong', weight: 400 },
+  { key: 'huiwen-mincho', source: 'huiwen', family: 'Huiwen Mincho', weight: 400, cjkFallback: true },
+  { key: 'zhuque-fangsong', source: 'zhuque', family: 'Zhuque Fangsong', weight: 400, cjkFallback: true },
   { key: 'cormorant-garamond-700', source: 'cormorant', family: 'Cormorant Garamond', weight: 700, axes: { wght: 700 }, features: LATIN_FEATURES },
   { key: 'cormorant-garamond-500', source: 'cormorant', family: 'Cormorant Garamond', weight: 500, axes: { wght: 500 }, features: LATIN_FEATURES },
-  { key: 'eb-garamond', source: 'ebGaramond', family: 'EB Garamond', weight: 400, axes: { wght: 400 }, features: LATIN_FEATURES },
+  // The small-caps labels use the alias: synthesised small caps in a fallback are much narrower.
+  { key: 'eb-garamond', source: 'ebGaramond', family: 'EB Garamond', weight: 400, axes: { wght: 400 }, features: LATIN_FEATURES, alias: 'EB Garamond Caps' },
 ];
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
@@ -88,6 +95,21 @@ async function source(name) {
     execFileSync(...tool);
   }
   return readFile(file);
+}
+
+// Vertical metrics from `hhea` (ascender, descender, line gap), as fractions of the em.
+function verticalMetrics(font) {
+  const table = (tag) => {
+    for (let i = 0; i < font.readUInt16BE(4); i++) {
+      const rec = 12 + i * 16;
+      if (font.toString('latin1', rec, rec + 4) === tag) return font.readUInt32BE(rec + 8);
+    }
+    throw new Error(`no ${tag} table`);
+  };
+  const upm = font.readUInt16BE(table('head') + 18);
+  const hhea = table('hhea');
+  const pct = (v) => `${((v / upm) * 100).toFixed(2)}%`;
+  return { ascent: pct(font.readInt16BE(hhea + 4)), descent: pct(-font.readInt16BE(hhea + 6)), lineGap: pct(font.readInt16BE(hhea + 8)) };
 }
 
 // Reads a few records from an OpenType `name` table (copyright, version, licence, licence URL).
@@ -128,6 +150,7 @@ async function main() {
       ...(font.axes && { variationAxes: font.axes }),
       ...(font.features && { keepFeatures: font.features }),
     });
+    if (font.cjkFallback) font.metrics = verticalMetrics(data);
     await writeFile(join(ROOT, 'assets/fonts', `${font.key}.woff2`), woff2);
     manifest[font.key] = { family: font.family, weight: font.weight, chars: text, bytes: woff2.length, source: SOURCES[font.source].url };
     console.log(`${font.key.padEnd(24)} ${String([...text].length).padStart(3)} chars  ${(woff2.length / 1024).toFixed(1)} KB`);
@@ -136,9 +159,16 @@ async function main() {
 
   // Fallback faces sized to the web fonts' metrics so the swap moves as little as possible.
   // Safari honours only size-adjust; Chromium and Firefox also apply the vertical overrides.
-  const faces = FONTS.map(
-    (f) => `@font-face { font-family: "${f.family}"; font-weight: ${f.weight}; font-display: swap; src: url(asset:fonts/${f.key}.woff2) format("woff2"); }`,
-  );
+  const faces = FONTS.flatMap((f) => {
+    const src = `url(asset:fonts/${f.key}.woff2) format("woff2")`;
+    const m = f.metrics && `ascent-override: ${f.metrics.ascent}; descent-override: ${f.metrics.descent}; line-gap-override: ${f.metrics.lineGap};`;
+    const face = (family, display) => `@font-face { font-family: "${family}"; font-weight: ${f.weight}; font-display: ${display}; src: ${src};${m ? ` ${m}` : ''} }`;
+    return [
+      face(f.family, 'swap'),
+      ...(f.alias ? [face(f.alias, 'block')] : []),
+      ...(m ? [`@font-face { font-family: "${f.family} Fallback"; src: ${CJK_LOCAL.join(', ')}; ${m} }`] : []),
+    ];
+  });
   const stack = (metrics, names) => {
     let css = createFontStack(metrics, { fontFaceFormat: 'styleString' }).fontFaces;
     for (const [from, to] of Object.entries(names)) css = css.replaceAll(`"${from}"`, `"${to}"`);

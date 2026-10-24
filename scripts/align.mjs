@@ -1,9 +1,13 @@
 // Measures the optical alignments the design computed at runtime and writes them to
 // src/align.css as constants, so the page never re-lays out once its fonts arrive:
-//   - the debossed wordmark's ink edge sits on the card margin, its ink top level with the seal;
+//   - the debossed wordmark's ink edge sits on the card margin, its ink top level with the seal
+//     (Latin wordmarks are placed from the left, so a fallback's different width doesn't move
+//     them when the font swaps in);
 //   - on wide cards the name's first stroke lines up with the seal's left edge, and the email row
 //     continues the link rows' rhythm with its baseline level with the role line;
 //   - on tall cards the seal is centred on the wordmark.
+// It also pins sizes that would otherwise change when the fonts swap in: the small-caps label
+// column on wide cards, and the height of the vertical text on tall ones.
 // Run after changing card text, sizes or fonts: `npm run align`.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -73,9 +77,11 @@ function measure({ tall, margin }) {
     const top = metrics(deboss, cjk ? text.slice(1) : text); // the first CJK glyph is nudged down
     const inkTop = tall ? margin : seal.offsetTop;
     vars['--dbx-t'] = px(inkTop - (baseline(deboss, deboss).y - top.actualBoundingBoxAscent));
-    if (tall && !cjk) vars['--dbx-l'] = px(margin + whole.actualBoundingBoxLeft);
-    else vars['--dbx-r'] = px(margin - (deboss.offsetWidth - whole.actualBoundingBoxRight));
+    if (cjk) vars['--dbx-r'] = px(margin - (deboss.offsetWidth - whole.actualBoundingBoxRight));
+    else if (tall) vars['--dbx-l'] = px(margin + whole.actualBoundingBoxLeft);
+    else vars['--dbx-l'] = px(face.offsetWidth - margin - whole.actualBoundingBoxRight);
     if (tall) {
+      if (!cjk) vars['--vgroup-h'] = px(face.querySelector('.main').offsetHeight);
       const mid = inkTop + (cjk ? (top.actualBoundingBoxAscent + whole.actualBoundingBoxDescent) / 2 : top.actualBoundingBoxAscent / 2);
       vars['--seal-t'] = px(mid - seal.offsetHeight / 2);
     } else {
@@ -95,6 +101,7 @@ function measure({ tall, margin }) {
       social.style.marginTop = `${mt}px`;
       const delta = baseline(face.querySelector('.role'), body).y - baseline(mail, body).y;
       vars['--social-mt'] = px(mt);
+      if (cjk) vars['--k-w'] = px(face.querySelector('.links .k').offsetWidth);
       vars['--social-mb'] = px(-delta);
     }
     out[face.classList.contains('front') ? 'front' : 'back'] = vars;
