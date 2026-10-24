@@ -3,12 +3,12 @@
 //   .mincho      → Huiwen Mincho        .deboss-lat → Cormorant Garamond 700
 //   .name-en     → Cormorant Garamond 500
 // Every CJK character on the page also goes to Zhuque Fangsong (the CJK fallback of the body
-// stack), and every other character to EB Garamond together with printable ASCII.
+// stack), and every other character to EB Garamond. Labels that boot.js swaps in (its string
+// literals containing CJK) count as page text too.
 import { readFile } from 'node:fs/promises';
 
 const SKIP = new Set(['script', 'style', 'title', 'svg', 'template', 'noscript']);
 const VOID = new Set(['meta', 'link', 'img', 'br', 'input', 'source', 'use', 'path', 'hr']);
-const ASCII = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('');
 
 export const isCjk = (ch) => ch.codePointAt(0) >= 0x2e80;
 
@@ -19,7 +19,7 @@ const decode = (s) =>
 
 // Returns [{ text, classes }] for every text node in <body>, outside skipped elements.
 function textNodes(html) {
-  const body = html.slice(html.indexOf('<body'));
+  const body = html.slice(html.indexOf('<body')).replace(/<!--[\s\S]*?-->/g, '');
   const stack = [];
   const out = [];
   for (const m of body.matchAll(/<(\/?)([a-z][\w-]*)([^>]*?)(\/?)>|([^<]+)/gi)) {
@@ -47,13 +47,15 @@ const chars = (s) => [...new Set([...s.replace(/\s/g, '')])].sort().join('');
 export async function charsets(templatePath) {
   const nodes = textNodes(await readFile(templatePath, 'utf8'));
   const within = (cls) => nodes.filter((n) => n.classes.has(cls)).map((n) => n.text).join('');
-  const all = nodes.map((n) => n.text).join('');
+  const script = await readFile(new URL('boot.js', `file://${templatePath}`), 'utf8');
+  const literals = (script.match(/'[^'\n]*'/g) ?? []).filter((l) => [...l].some(isCjk)).join('');
+  const all = nodes.map((n) => n.text).join('') + literals;
   return {
     'huiwen-mincho': chars([...within('mincho')].filter(isCjk).join('')),
     'zhuque-fangsong': chars([...all].filter(isCjk).join('')),
     'cormorant-garamond-700': chars(within('deboss-lat')),
     'cormorant-garamond-500': chars(within('name-en')),
-    'eb-garamond': chars(ASCII + [...all].filter((c) => !isCjk(c)).join('')) + ' ',
+    'eb-garamond': chars([...all].filter((c) => !isCjk(c) && c !== "'").join('')) + ' ',
   };
 }
 
