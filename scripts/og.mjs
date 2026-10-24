@@ -2,7 +2,6 @@
 // finished branch with the magpie, from a fixed seed. Run locally after visual changes:
 //   npm run og               uses SEED below
 //   npm run og -- 7 12 31    renders those seeds to .cache/og-<seed>.jpg to choose from
-import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
@@ -13,9 +12,9 @@ const SEED = 4;
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const seeds = process.argv.slice(2).map(Number);
 
-await build();
-await mkdir(`${ROOT}.cache`, { recursive: true });
-const server = await serve();
+const DIR = `${ROOT}.cache/build-og`;
+await build({ outDir: DIR });
+const server = await serve(DIR);
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
   // Reduced motion: no intro, the branch drawn finished, the magpie already perched and still.

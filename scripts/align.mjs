@@ -4,7 +4,7 @@
 //   - on wide cards the name's first stroke lines up with the seal's left edge, and the email row
 //     continues the link rows' rhythm with its baseline level with the role line;
 //   - on tall cards the seal is centred on the wordmark.
-// Run after changing card text, sizes or fonts: `npm run align` (it rebuilds dist/ first).
+// Run after changing card text, sizes or fonts: `npm run align`.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -12,6 +12,7 @@ import { build } from './build.mjs';
 import { serve } from './lib/serve.mjs';
 
 const OUT = fileURLToPath(new URL('../src/align.css', import.meta.url));
+const DIR = fileURLToPath(new URL('../.cache/build-align', import.meta.url));
 
 // Runs in the page. Ports the design's g4AlignNow measurements; returns CSS custom properties.
 function measure({ tall, margin }) {
@@ -115,8 +116,8 @@ async function run(page, url, { width, height, tall, margin }) {
 
 const rule = (sel, vars) => `${sel} { ${Object.entries(vars).map(([k, v]) => `${k}: ${v};`).join(' ')} }`;
 
-await build();
-const server = await serve();
+await build({ outDir: DIR });
+const server = await serve(DIR);
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
   const page = await browser.newPage({ locale: 'zh-CN' });
@@ -138,4 +139,3 @@ try {
   await browser.close();
   server.close();
 }
-await build();
