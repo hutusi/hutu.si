@@ -17,6 +17,8 @@ import { addCardFibres, paintPaper } from './paper.js';
 import { spawnPetal, stepPetals } from './petals.js';
 import { createRng, randomSeed } from './rng.js';
 
+performance.mark('scene-start');
+
 const root = document.documentElement;
 const card = document.getElementById('card');
 const frameEl = document.getElementById('frame');
