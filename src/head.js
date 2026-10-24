@@ -17,7 +17,7 @@
   // region that must stay visible when the viewport is too small to show it all readably.
   const tallQuery = matchMedia('(max-aspect-ratio: 9/10)');
   const COMPOSITIONS = {
-    wide: { w: 1280, h: 800, frame: [0, 0, 1280, 800], core: [290, 156, 990, 596] },
+    wide: { w: 1280, h: 800, frame: [0, 0, 1280, 800], core: [290, 156, 990, 568] },
     tall: { w: 390, h: 844, frame: [0, 0, 390, 810], core: [0, 222, 390, 810] },
   };
   const MAX_SCALE = 1.5;

@@ -42,6 +42,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .sprite { position: absolute; width: 0; height: 0; }
 [hidden] { display: none !important; }
 
+/* Scene canvases (added by the deferred scene script): four under the card, petals over it. */
+.layer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; animation: fade-in .8s ease both; }
 .frame { position: fixed; left: 0; top: 0; transform: translate(var(--ox, calc(50vw - 640px)), var(--oy, calc(50vh - 400px))); }
 .stage { position: relative; width: 1280px; height: 800px; zoom: var(--s, 1); }
 
