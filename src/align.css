@@ -1,0 +1,7 @@
+/* Placeholder offsets; regenerated from the real fonts by `npm run align`. */
+.front { --dbx-r: 44px; --dbx-t: 28px; --name-ml: 0px; --who-mb: 0px; --social-mt: 18px; }
+.back { --dbx-r: 44px; --dbx-t: 34px; --name-ml: 0px; --who-mb: 0px; --social-mt: 18px; }
+@media (max-aspect-ratio: 9/10) {
+  .front { --dbx-l: 36px; --dbx-t: 27px; --seal-t: 40px; }
+  .back { --dbx-r: 36px; --dbx-t: 31px; --seal-t: 40px; }
+}
