@@ -225,11 +225,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 .again {
   position: absolute; right: 36px; bottom: 28px; height: 44px; padding: 0 4px;
-  font-size: 15px; line-height: 44px; color: rgba(47, 40, 35, .55);
+  font-size: 15px; line-height: 44px; color: rgba(47, 40, 35, .68); /* the design's .55 is below 4.5:1 */
   text-decoration: underline 1px transparent; text-underline-offset: 4px;
   transition: text-decoration-color .2s ease, color .2s ease;
 }
-.again:hover { text-decoration-color: currentColor; color: rgba(47, 40, 35, .7); }
+.again:hover { text-decoration-color: currentColor; color: rgba(47, 40, 35, .82); }
 
 /* ---- Tall composition (portrait viewports) ---- */
 @media (max-aspect-ratio: 9/10) {
@@ -250,7 +250,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .front .seal { left: auto; right: 36px; }
   .back .seal { left: 36px; }
   .again { right: 0; left: 0; bottom: auto; top: 766px; margin: 0 auto; width: max-content; padding: 0 12px; }
-  .again:hover { color: rgba(47, 40, 35, .55); }
+  .again:hover { color: rgba(47, 40, 35, .68); }
   .again:active { text-decoration-color: currentColor; }
 
   /* Front: name, role and links set vertically, right to left. */
