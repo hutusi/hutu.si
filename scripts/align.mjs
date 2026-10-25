@@ -69,6 +69,8 @@ function measure({ tall, margin }) {
   const out = {};
   for (const face of document.querySelectorAll('.face')) {
     const vars = {};
+    // The page already has the current align.css; measure natural sizes, not those it pins.
+    for (const pin of ['--k-w', '--vgroup-h']) face.style.setProperty(pin, 'auto');
     const deboss = face.querySelector('.deboss');
     const seal = face.querySelector('.seal');
     const cjk = deboss.classList.contains('deboss-cjk');
