@@ -28,7 +28,8 @@ export default defineConfig({
     { name: 'firefox-mobile', use: { ...devices['Desktop Firefox'], viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true } },
   ],
   webServer: {
-    command: `node scripts/build.mjs && npx wrangler dev --port ${PORT} --ip 127.0.0.1 --log-level warn`,
+    // Built with the service worker on, whatever src/sw.js says, so a kill-switch deploy keeps CI green.
+    command: `node scripts/build.mjs --sw=on && npx wrangler dev --port ${PORT} --ip 127.0.0.1 --log-level warn`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: !CI,
     timeout: 120_000,

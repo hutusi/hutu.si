@@ -74,4 +74,16 @@
         }).observe({ type: 'paint', buffered: true })
       : requestAnimationFrame(() => requestAnimationFrame(go));
   painted(() => document.fonts.ready.then(scene));
+
+  // Return visits: a service worker (sw.js) keeps a copy of the card, so it shows at once, even
+  // offline. It is registered only once the card has painted, the page has loaded and the
+  // browser is idle, so a first visit is exactly as fast as without it. (A fast load can finish
+  // before the first paint, hence both.) With its kill switch on, it is unregistered instead.
+  const sw = navigator.serviceWorker;
+  if (sw) {
+    const loaded = (fn) => (document.readyState === 'complete' ? fn() : addEventListener('load', fn, { once: true }));
+    const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 1000));
+    const run = () => (__SERVICE_WORKER__ ? sw.register('/sw.js') : sw.getRegistrations().then((all) => Promise.all(all.map((r) => r.unregister())))).catch(() => {});
+    painted(() => loaded(() => idle(run)));
+  }
 })();

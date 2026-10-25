@@ -75,6 +75,10 @@ bilingual introduction) and `logo.jpg`, all in `static/`; see
 6. **The scene** grows the branch for about 16 s, then the magpie flies in and perches. After
    that the loop sleeps whenever nothing moves.
 7. **The analytics beacon** loads and reports. It is deferred, so it never touches the card.
+8. **The service worker** (`sw.js`) is registered once the card has painted, the page has loaded
+   and the browser is idle. It precaches the page and its assets, so the next visit is served
+   from that copy, even offline. Meanwhile the browser checks for a newer `sw.js` in the
+   background. See [decisions.md](decisions.md#18-a-service-worker-for-return-visits).
 
 ## Layout
 
@@ -161,7 +165,9 @@ Optical alignments the design measured at runtime are measured once with the rea
    `boot.js`. Inline all of them into `index.html`, resolving `asset:` references and adding
    the preload links.
 4. Write `_headers` with the sha256 hash of every inline script and style in `index.html` and
-   `404.html`.
+   `404.html`. Then write `sw.js` from `src/sw.js`, with its precache list (`/` plus every
+   `/assets/` file) and this build's version (a hash of the rest of `sw.js`, the page and
+   `_headers`).
 5. **Fail** if a character on the card is missing from the font subsets
    (`assets/fonts/manifest.json`), or if `index.html` is over 14 KB gzip or a first visit over
    150 KB gzip.

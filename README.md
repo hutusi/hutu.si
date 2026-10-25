@@ -64,6 +64,7 @@ src/head.js, src/boot.js  inlined scripts: side, scale and intro; flipping, popu
 src/fonts.css          generated @font-face rules                   (npm run fonts)
 src/align.css          generated optical alignments                 (npm run align)
 src/scene/             the deferred scene: branch, flowers, petals, magpie, paper
+src/sw.js              the service worker: return visits from a cached copy, its kill switch
 src/worker.js          Worker code, only for the reserved /a /w /t paths
 src/_headers           security headers and caching; CSP hashes filled in by the build
 assets/                fingerprinted at build: font subsets, card images

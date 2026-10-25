@@ -37,7 +37,8 @@ npm run test:smoke                               # the live site (SMOKE_URL=… 
 - requests anything from another origin.
 
 A test that provokes an error on purpose, such as a failed image, names what it expects with
-`test.use({ allow: /…/ })`.
+`test.use({ allow: /…/ })`. A test that opens pages in a context of its own (the service-worker
+tests do) watches them the same way with `watch(page, origin, allow)`.
 
 ## What guards what
 
@@ -61,6 +62,8 @@ A test that provokes an error on purpose, such as a failed image, names what it 
 | security headers, reserved paths, static 404, redirects, caching | `e2e/routing.spec.js` |
 | identity: bilingual ProfilePage, `rel="me"`, social tags, robots/sitemap, `llms.txt`, all links in agreement | `unit/identity.test.js` |
 | text files served as UTF-8; both sides readable without JavaScript | `e2e/routing.spec.js`, `e2e/card.spec.js` |
+| service worker: precaches exactly the card, never cached itself, kill-switch build | `unit/build.test.js` |
+| service worker: registered only after paint and load; return visits from the cache, even offline; nothing else served by it; a deploy shown next visit; a page open across a deploy keeps its assets; a failed update keeps the working copy; a rollback keeps the rolled-back copy, and a failed one the copy it would have replaced; the kill switch | `e2e/service-worker.spec.js` |
 | live site: clean load, headers, HTTPS redirect, identity metadata, scripts let in, DNSSEC, certificate | `smoke/production.spec.js` |
 
 `e2e/screenshots.spec.js` attaches screenshots of both sides, with the popup open, to the HTML
@@ -107,3 +110,12 @@ pixel.
   runs in Chromium and WebKit.
 - **The font test** needs the metric-matched fallback fonts installed. Without them (on most
   Linux systems) it skips.
+- **The service-worker tests** run against their own server (`scripts/lib/serve.mjs` with
+  `headers: true`). It applies `_headers`, swaps in another build ("a deploy") and drops
+  connections ("offline") the same way in every engine.
+- **The service worker is built explicitly** on (and, for the kill-switch tests, off), whatever
+  `ENABLED` says in `src/sw.js`: `build({ swEnabled })` in the tests, `--sw=on` for the
+  `wrangler dev` server. The tests then pass with the switch in either position, so they never
+  block the deploy that ships it.
+- **The kill-switch test** allows up to three visits. A browser may skip its update check right
+  after installing a worker; real visitors' workers are older.

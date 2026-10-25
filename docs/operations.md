@@ -35,6 +35,30 @@ Workers & Pages → hutu-si → Settings → Builds:
   direct push to `main` they run alongside the deploy, so run `npm run verify` locally first.
 - **Manual deploy** (rarely needed): `npx wrangler login` once, then `npm run deploy`.
 
+## The service worker
+
+Return visits are served from a copy of the card that a service worker keeps (`src/sw.js`; see
+[decisions.md](decisions.md#18-a-service-worker-for-return-visits)).
+
+- **How a deploy reaches visitors.** Each deploy that changes the card or its headers
+  (`_headers`) changes `sw.js`. On a
+  visitor's next visit the browser notices, shows the cached card, and installs the new copy in
+  the background; the visit after that shows the new card. So after a deploy, expect returning
+  visitors to see the change one visit late.
+- **To see the new version yourself at once:** reload twice, or use a private window.
+- **The kill switch,** if a bad version is ever cached:
+  1. In `src/sw.js`, set `const ENABLED = false;`, then commit and push. The tests build the
+     worker explicitly on and off, so they pass either way and never block this deploy. The unit
+     tests also check the kill-switch build itself.
+  2. On each visitor's next visit, the browser fetches the new `sw.js`. No cache can stand in
+     its way. It deletes the cached card, unregisters itself and reloads the page from the
+     network. The page from that build unregisters any worker instead of registering one.
+  3. Once it's fixed, set `ENABLED` back to `true` and deploy again.
+- **If deploys are broken too:** add a Cloudflare response-header rule (Rules → Transform Rules →
+  Modify Response Header) setting `Clear-Site-Data: "cache", "storage"` on `hutu.si/sw.js`.
+  Browsers that see it drop the site's caches and workers. Remove the rule once visitors have
+  been cleared.
+
 ## Rolling back
 
 1. Find the last good version: `npx wrangler deployments list`, or the dashboard's Deployments

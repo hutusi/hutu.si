@@ -284,3 +284,37 @@ There's no `hreflang`: it describes separate URLs per language, which this site 
   in `static/llms.txt`; the bio lives in the JSON-LD and `llms.txt`. Change them together; the
   unit tests fail if they disagree.
 - **Card text stays in the HTML,** so crawlers and agents never see less than a visitor.
+
+## 18. A service worker for return visits
+
+**Decision.** A small service worker (`src/sw.js`) keeps a copy of the card, so return visits
+show it at once, even offline.
+- **What's cached.** Exactly the page and its fingerprinted assets, precached all or nothing.
+  Navigations to `/` (any query) and `/assets/` files come from the cache: this version's copy,
+  else the previous one's (for a page still open on it), else the network. Everything else goes to
+  the network untouched: `/a`, `/w`, `/t`, `/cdn-cgi/`, other origins, and anything but GET.
+- **Versioning.** The build writes the version and the precache list into `sw.js`. The version
+  is a hash of the rest of `sw.js` (its code and precache list), the page and `_headers`. So any
+  change to the card or to the headers it is served with changes `sw.js` (a cached page keeps
+  the headers it was cached with, CSP included), and `sw.js` never changes without its version.
+- **Updates.** Browsers re-check `sw.js` on each visit (it is served `no-cache`). A new copy
+  installs in the background, and the next visit shows it. The copy of the version that took
+  over before it is kept for pages still open across a deploy. The worker records that order
+  itself (a rollback takes over again, so it counts as the newest), and an install stores all
+  of its copy or nothing, so a failed update or rollback never touches a complete copy.
+- **First visits.** The worker is registered only after the card has painted, the page has
+  loaded and the browser is idle.
+- **Kill switch.** `ENABLED` in `src/sw.js` (see [operations.md](operations.md#the-service-worker)).
+
+**Why.** Some mainland China networks reach Cloudflare slowly, and the card rarely changes.
+Measured locally, return visits show the card in about 0.1 s on Slow 4G and 3G, against 0.36
+and 0.78 s cold, with about 1 KB on the wire. First visits are unchanged.
+
+**Keep in mind.**
+- **Never widen what's cached** beyond the page and `/assets/`. The short-link paths and
+  `/cdn-cgi/` must never be served from the cache.
+- **A deploy shows up one visit late.** That is the trade-off for instant visits.
+- **Recovering from a bad version:** for a bad *card*, deploy the fix, and it reaches each
+  visitor on their second visit. For a bad *worker*, use the kill switch.
+- **The scene keeps its timing:** a cached return visit still starts it only after paint and
+  fonts.
