@@ -39,10 +39,14 @@ self.addEventListener('activate', (event) => {
         for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url).catch(() => {});
         return;
       }
-      // Keep this version and the one before it: a page still open on the old version can then
-      // still load its lazy assets (the QR code) after a deploy.
-      const older = keys.filter((key) => key !== CACHE);
-      await Promise.all(older.slice(0, -1).map((key) => caches.delete(key)));
+      // Keep this version and the newest complete one before it: a page still open on the old
+      // version can then still load its lazy assets (the QR code) after a deploy. A failed
+      // install leaves an empty cache (addAll stores all or nothing), never the one to keep.
+      let kept = false;
+      for (const key of keys.filter((key) => key !== CACHE).reverse()) {
+        if (!kept && (await (await caches.open(key)).keys()).length) kept = true;
+        else await caches.delete(key);
+      }
       await self.clients.claim();
     })(),
   );

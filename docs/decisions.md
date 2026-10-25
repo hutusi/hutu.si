@@ -298,8 +298,8 @@ show it at once, even offline.
   headers it is served with changes `sw.js`. (A cached page keeps the headers it was cached
   with, CSP included.)
 - **Updates.** Browsers re-check `sw.js` on each visit (it is served `no-cache`). A new copy
-  installs in the background, and the next visit shows it. The previous copy is kept for pages
-  still open across a deploy.
+  installs in the background, and the next visit shows it. The previous complete copy is kept
+  for pages still open across a deploy; a failed update never replaces it.
 - **First visits.** The worker is registered only after the card has painted, the page has
   loaded and the browser is idle.
 - **Kill switch.** `ENABLED` in `src/sw.js` (see [operations.md](operations.md#the-service-worker)).

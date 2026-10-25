@@ -71,7 +71,7 @@ test.describe('with its own server', () => {
 
   test.beforeAll(async () => {
     const tmp = await mkdtemp(join(tmpdir(), 'hutusi-sw-'));
-    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), K: join(tmp, 'K') };
+    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), F: join(tmp, 'F'), K: join(tmp, 'K') };
     // Explicitly on, whatever ENABLED says in src/sw.js, so a kill-switch deploy keeps CI green.
     builds = { A: await build({ outDir: dirs.A, log: () => {}, swEnabled: true }) };
     // B: the same site after a deploy that changed the page and the QR code (so its fingerprint).
@@ -83,6 +83,11 @@ test.describe('with its own server', () => {
     await writeFile(join(dirs.B, 'index.html'), html.replace('<html lang="zh-Hans">', '<html lang="zh-Hans" data-build="B">').replaceAll(qr.A, qr.B));
     const sw = await readFile(join(dirs.B, 'sw.js'), 'utf8');
     await writeFile(join(dirs.B, 'sw.js'), sw.replaceAll(builds.A.sw.version, 'b'.repeat(12)).replaceAll(qr.A, qr.B));
+    // F: a deploy whose worker fails to install: its list names a file the server doesn't have.
+    await cp(dirs.A, dirs.F, { recursive: true });
+    const failing = sw.replaceAll(builds.A.sw.version, 'f'.repeat(12)).replace('["/",', '["/","/assets/missing.0000000000.js",');
+    if (!failing.includes('missing')) throw new Error('could not add a missing file to F\'s precache list');
+    await writeFile(join(dirs.F, 'sw.js'), failing);
     // K: a deploy with the kill switch on.
     builds.K = await build({ outDir: dirs.K, log: () => {}, swEnabled: false });
     server = await serve(dirs.A, { headers: true });
@@ -156,6 +161,20 @@ test.describe('with its own server', () => {
     expect(await status()).toBe(200);
     server.setOffline(true);
     expect(await status()).toBe(200);
+    await context.close();
+  });
+
+  test('a failed update never costs the working copy', async ({ browser }) => {
+    const { context, page } = await returning(browser);
+    server.setRoot(dirs.F);
+    expect(await update(page)).toBe('redundant');
+    server.setRoot(dirs.B);
+    expect(await update(page)).toBe('activated');
+    // B's copy, and A's kept as the previous one (F's failed install left nothing worth keeping).
+    expect(await cacheContents(page)).toEqual({
+      [`hutusi-${builds.A.sw.version}`]: [...builds.A.sw.precache].sort(),
+      [`hutusi-${'b'.repeat(12)}`]: builds.A.sw.precache.map((url) => (url === qr.A ? qr.B : url)).sort(),
+    });
     await context.close();
   });
 
