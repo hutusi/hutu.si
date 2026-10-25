@@ -167,7 +167,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .who { grid-column: 1; grid-row: 2 / 4; align-self: end; display: flex; flex-direction: column; gap: 14px; }
 .name { font: 500 44px/1 var(--mincho); letter-spacing: .14em; margin-left: var(--name-ml, 0); }
 .name-en { font: 500 43px/1 var(--display); letter-spacing: 0; }
-.role { font-size: 16px; line-height: 1.2; letter-spacing: .04em; color: #6d6157; }
+.role { font-size: 16px; line-height: 1.2; letter-spacing: .04em; color: #6d6157; white-space: nowrap; }
 .back .role { letter-spacing: 0; color: #f1d6c4; }
 .sep-v { display: none; }
 .mincho { font-family: var(--mincho); }
