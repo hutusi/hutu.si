@@ -20,6 +20,10 @@ self.addEventListener('install', (event) => {
       if (ENABLED) {
         // All or nothing: one failed fetch fails the install, so a half copy is never used. The
         // page is revalidated; the assets never change, so the HTTP cache may supply them.
+        // Always into a new cache, even when this version had one (a rollback): caches are listed
+        // in the order they were created, which activate relies on to find the previous version.
+        // (The build makes the version change whenever sw.js does, so this is never the live one.)
+        await caches.delete(CACHE);
         const cache = await caches.open(CACHE);
         await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: url === '/' ? 'no-cache' : 'default' })));
       }

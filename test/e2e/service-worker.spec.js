@@ -67,22 +67,25 @@ test.describe('with its own server', () => {
   let dirs;
   let builds;
   let server;
-  let qr; // the QR code's URL in A and in B
+  let qr; // the QR code's URL in each deploy
 
   test.beforeAll(async () => {
     const tmp = await mkdtemp(join(tmpdir(), 'hutusi-sw-'));
-    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), F: join(tmp, 'F'), K: join(tmp, 'K') };
+    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), C: join(tmp, 'C'), F: join(tmp, 'F'), K: join(tmp, 'K') };
     // Explicitly on, whatever ENABLED says in src/sw.js, so a kill-switch deploy keeps CI green.
     builds = { A: await build({ outDir: dirs.A, log: () => {}, swEnabled: true }) };
-    // B: the same site after a deploy that changed the page and the QR code (so its fingerprint).
-    await cp(dirs.A, dirs.B, { recursive: true });
+    // B and C: later deploys, each of which changed the page and the QR code (so its fingerprint).
     qr = { A: builds.A.sw.precache.find((url) => url.includes('wechat-qr')) };
-    qr.B = qr.A.replace(/\.[0-9a-f]{10}\./, `.${'b'.repeat(10)}.`);
-    await rename(join(dirs.B, qr.A), join(dirs.B, qr.B));
-    const html = await readFile(join(dirs.B, 'index.html'), 'utf8');
-    await writeFile(join(dirs.B, 'index.html'), html.replace('<html lang="zh-Hans">', '<html lang="zh-Hans" data-build="B">').replaceAll(qr.A, qr.B));
-    const sw = await readFile(join(dirs.B, 'sw.js'), 'utf8');
-    await writeFile(join(dirs.B, 'sw.js'), sw.replaceAll(builds.A.sw.version, 'b'.repeat(12)).replaceAll(qr.A, qr.B));
+    const html = await readFile(join(dirs.A, 'index.html'), 'utf8');
+    const sw = await readFile(join(dirs.A, 'sw.js'), 'utf8');
+    for (const name of ['B', 'C']) {
+      const tag = name.toLowerCase();
+      qr[name] = qr.A.replace(/\.[0-9a-f]{10}\./, `.${tag.repeat(10)}.`);
+      await cp(dirs.A, dirs[name], { recursive: true });
+      await rename(join(dirs[name], qr.A), join(dirs[name], qr[name]));
+      await writeFile(join(dirs[name], 'index.html'), html.replace('<html lang="zh-Hans">', `<html lang="zh-Hans" data-build="${name}">`).replaceAll(qr.A, qr[name]));
+      await writeFile(join(dirs[name], 'sw.js'), sw.replaceAll(builds.A.sw.version, tag.repeat(12)).replaceAll(qr.A, qr[name]));
+    }
     // F: a deploy whose worker fails to install: its list names a file the server doesn't have.
     await cp(dirs.A, dirs.F, { recursive: true });
     const failing = sw.replaceAll(builds.A.sw.version, 'f'.repeat(12)).replace('["/",', '["/","/assets/missing.0000000000.js",');
@@ -175,6 +178,21 @@ test.describe('with its own server', () => {
       [`hutusi-${builds.A.sw.version}`]: [...builds.A.sw.precache].sort(),
       [`hutusi-${'b'.repeat(12)}`]: builds.A.sw.precache.map((url) => (url === qr.A ? qr.B : url)).sort(),
     });
+    await context.close();
+  });
+
+  test('after a rollback, the rolled-back version is the one kept for open pages', async ({ browser }) => {
+    const { context, page } = await returning(browser);
+    // A, then B, then a rollback to A (its sw.js again), then C. The page stays open on A throughout.
+    for (const dir of [dirs.B, dirs.A, dirs.C]) {
+      server.setRoot(dir);
+      expect(await update(page)).toBe('activated');
+    }
+    expect(Object.keys(await cacheContents(page)).sort()).toEqual([`hutusi-${builds.A.sw.version}`, `hutusi-${'c'.repeat(12)}`].sort());
+    const status = () => page.evaluate((url) => fetch(url, { cache: 'no-store' }).then((r) => r.status, () => 'network error'), qr.A);
+    expect(await status()).toBe(200);
+    server.setOffline(true);
+    expect(await status()).toBe(200);
     await context.close();
   });
 

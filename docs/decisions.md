@@ -294,12 +294,13 @@ show it at once, even offline.
   else the previous one's (for a page still open on it), else the network. Everything else goes to
   the network untouched: `/a`, `/w`, `/t`, `/cdn-cgi/`, other origins, and anything but GET.
 - **Versioning.** The build writes the version and the precache list into `sw.js`. The version
-  is a hash of the page, `_headers` and the asset names, so any change to the card or to the
-  headers it is served with changes `sw.js`. (A cached page keeps the headers it was cached
-  with, CSP included.)
+  is a hash of the rest of `sw.js` (its code and precache list), the page and `_headers`. So any
+  change to the card or to the headers it is served with changes `sw.js` (a cached page keeps
+  the headers it was cached with, CSP included), and `sw.js` never changes without its version.
 - **Updates.** Browsers re-check `sw.js` on each visit (it is served `no-cache`). A new copy
   installs in the background, and the next visit shows it. The previous complete copy is kept
-  for pages still open across a deploy; a failed update never replaces it.
+  for pages still open across a deploy; a failed update never replaces it. Each install fills
+  a new cache, so after a rollback the rolled-back version counts as the newest.
 - **First visits.** The worker is registered only after the card has painted, the page has
   loaded and the browser is idle.
 - **Kill switch.** `ENABLED` in `src/sw.js` (see [operations.md](operations.md#the-service-worker)).

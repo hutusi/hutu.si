@@ -66,10 +66,11 @@ test('the service worker precaches exactly the card, and is never cached itself'
     assert.equal(enabled, true);
     assert.match(version, /^[0-9a-f]{12}$/);
     assert.ok(code.includes(JSON.stringify(version)), 'sw.js carries its version');
-    // It covers everything a cached page is served with, so a deploy that changes only the
-    // headers (the CSP, say) reaches returning visitors too.
-    const served = [index, await readFile(join(out, '_headers'), 'utf8'), ...precache].join('\n');
-    assert.equal(version, createHash('sha256').update(served).digest('hex').slice(0, 12), 'the version covers the page, its headers and its assets');
+    // It covers the rest of sw.js (its code and precache list), the page and its headers: so a
+    // deploy that changes only the headers (the CSP, say) reaches returning visitors too, and
+    // sw.js never changes without its version (each install gets a cache of its own).
+    const rest = [code.replaceAll(version, '{{version}}'), index, await readFile(join(out, '_headers'), 'utf8')].join('\n');
+    assert.equal(version, createHash('sha256').update(rest).digest('hex').slice(0, 12), 'the version covers the worker, the page and its headers');
     const assets = [...new Set(index.match(/\/assets\/[\w./-]+/g))];
     assert.equal(precache[0], '/');
     for (const asset of assets) assert.ok(precache.includes(asset), `${asset} is precached`);

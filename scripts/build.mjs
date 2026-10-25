@@ -123,19 +123,22 @@ async function report(dist, html, sw, log) {
   return { errors, html: rows[0], total };
 }
 
-// The service worker (src/sw.js). The build writes in this build's version (a hash of the page,
-// its response headers and the asset names) and its precache list, so any change to what the
-// cached card is served with changes sw.js, which is how browsers notice a new copy. `enabled`
-// is the kill switch.
+// The service worker (src/sw.js). The build writes in its precache list and this build's version:
+// a hash of the rest of sw.js, the page and its response headers. So any change to what the
+// cached card is served with changes sw.js, which is how browsers notice a new copy, and sw.js
+// never changes without its version (each install then gets a cache of its own). `enabled` is
+// the kill switch.
 async function serviceWorker(dist, index, headers, enabled) {
   const assets = (await walk(join(dist, 'assets'))).map((f) => `/${relative(dist, f).replaceAll('\\', '/')}`).sort();
   const precache = ['/', ...assets];
-  const version = sha([index, headers, ...precache].join('\n')).slice(0, 12);
-  const code = (await readFile(join(SRC, 'sw.js'), 'utf8'))
-    .replace(/const ENABLED = (true|false);/, `const ENABLED = ${enabled};`)
-    .replace("'{{version}}'", JSON.stringify(version))
-    .replace("['{{precache}}']", JSON.stringify(precache));
-  const out = await minifyJs(code);
+  const code = await minifyJs(
+    (await readFile(join(SRC, 'sw.js'), 'utf8'))
+      .replace(/const ENABLED = (true|false);/, `const ENABLED = ${enabled};`)
+      .replace("['{{precache}}']", JSON.stringify(precache)),
+  );
+  if (!code.includes('{{version}}')) throw new Error('src/sw.js has no {{version}} placeholder');
+  const version = sha([code, index, headers].join('\n')).slice(0, 12);
+  const out = code.replaceAll('{{version}}', version);
   await writeFile(join(dist, 'sw.js'), out);
   return { version, precache, enabled, code: out };
 }
