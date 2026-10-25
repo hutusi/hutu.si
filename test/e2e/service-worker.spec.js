@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from '../../scripts/build.mjs';
 import { serve } from '../../scripts/lib/serve.mjs';
-import { expect, test } from './fixtures.js';
+import { expect, expectNoProblems, test, watch } from './fixtures.js';
 
 test.skip(({ isMobile, hasTouch }) => isMobile || hasTouch, 'runs in the desktop project of each engine');
 
@@ -110,18 +110,25 @@ test.describe('with its own server', () => {
     server.setOffline(false);
   });
 
-  // A visitor's browser after a first visit: the worker installed and in control.
-  const returning = async (browser) => {
+  // A visitor's browser after a first visit: the worker installed and in control. Its page is
+  // watched like every other test's (`allow` names the errors a test expects), which `done`
+  // checks before closing it.
+  const returning = async (browser, allow) => {
     const context = await browser.newContext({ locale: 'zh-CN', reducedMotion: 'reduce' });
     await context.addInitScript(() => navigator.serviceWorker?.addEventListener('controllerchange', () => (window.__controllerChanged = true)));
     const page = await context.newPage();
+    const problems = await watch(page, server.url, allow);
     await page.goto(`${server.url}/?seed=4`);
     await controlled(page);
-    return { context, page };
+    const done = async () => {
+      expectNoProblems(problems);
+      await context.close();
+    };
+    return { page, done };
   };
 
   test('a return visit comes from the cache, complete, even with the network gone', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     server.setOffline(true);
     await page.reload();
     await expect(page.locator('#front h1')).toHaveText('胡智勇');
@@ -130,11 +137,12 @@ test.describe('with its own server', () => {
     await page.waitForFunction(() => performance.getEntriesByName('scene-start').length > 0);
     await expect(page.locator('#back .seal img')).toHaveJSProperty('complete', true);
     expect(await page.evaluate(() => document.querySelector('#back .seal img').naturalWidth)).toBeGreaterThan(0);
-    await context.close();
+    await done();
   });
 
   test('only the card is cached; everything else is left to the network', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    // The fetches below fail on purpose, offline; Chromium and WebKit log each.
+    const { page, done } = await returning(browser, /^console error: Failed to load resource: (net::ERR_EMPTY_RESPONSE|The network connection was lost\.)$/);
     const caches = await cacheContents(page);
     expect(caches).toEqual({ [`hutusi-${builds.A.sw.version}`]: [...builds.A.sw.precache].sort() });
     // With the network gone only the worker could answer these, and it must not.
@@ -143,11 +151,11 @@ test.describe('with its own server', () => {
       const outcome = await page.evaluate((p) => fetch(p).then(() => 'answered', () => 'network error'), path);
       expect(outcome, path).toBe('network error');
     }
-    await context.close();
+    await done();
   });
 
   test('a new deploy shows on the next visit, fetched in the background', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     expect(await buildName(page)).toBe('A');
     server.setRoot(dirs.B);
     await page.reload(); // the cached card at once, while the new worker installs
@@ -157,11 +165,11 @@ test.describe('with its own server', () => {
     expect(await buildName(page)).toBe('B');
     // The previous copy is kept for pages still open on it; there's never more than two.
     expect(Object.keys(await cacheContents(page)).sort()).toEqual([`hutusi-${builds.A.sw.version}`, `hutusi-${'b'.repeat(12)}`].sort());
-    await context.close();
+    await done();
   });
 
   test('a page still open across a deploy still gets its own assets, even offline', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     server.setRoot(dirs.B);
     expect(await update(page)).toBe('activated'); // B now controls this page from A
     // The page asks for A's QR code (as when the WeChat popup first opens), which B's deploy no
@@ -170,11 +178,11 @@ test.describe('with its own server', () => {
     expect(await status()).toBe(200);
     server.setOffline(true);
     expect(await status()).toBe(200);
-    await context.close();
+    await done();
   });
 
   test('a failed update never costs the working copy', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     server.setRoot(dirs.F);
     expect(await update(page)).toBe('redundant');
     server.setRoot(dirs.B);
@@ -184,11 +192,11 @@ test.describe('with its own server', () => {
       [`hutusi-${builds.A.sw.version}`]: [...builds.A.sw.precache].sort(),
       [`hutusi-${'b'.repeat(12)}`]: builds.A.sw.precache.map((url) => (url === qr.A ? qr.B : url)).sort(),
     });
-    await context.close();
+    await done();
   });
 
   test('after a rollback, the rolled-back version is the one kept for open pages', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     // A, then B, then a rollback to A (its sw.js again), then C. The page stays open on A throughout.
     for (const dir of [dirs.B, dirs.A, dirs.C]) {
       server.setRoot(dir);
@@ -199,11 +207,11 @@ test.describe('with its own server', () => {
     expect(await status()).toBe(200);
     server.setOffline(true);
     expect(await status()).toBe(200);
-    await context.close();
+    await done();
   });
 
   test('a failed rollback leaves the copy it would have replaced whole', async ({ browser }) => {
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     server.setRoot(dirs.B);
     expect(await update(page)).toBe('activated');
     server.setRoot(dirs.R);
@@ -215,12 +223,12 @@ test.describe('with its own server', () => {
     });
     server.setOffline(true);
     expect(await page.evaluate((url) => fetch(url, { cache: 'no-store' }).then((r) => r.status, () => 'network error'), qr.A)).toBe(200);
-    await context.close();
+    await done();
   });
 
   test('the kill switch clears the cache and removes the worker', async ({ browser }) => {
     test.setTimeout(60_000); // up to three visits, slower when the whole suite shares the machine
-    const { context, page } = await returning(browser);
+    const { page, done } = await returning(browser);
     server.setRoot(dirs.K);
     // On the next visit the browser fetches the new sw.js, which cleans up and reloads the page.
     // A browser may skip that check right after installing a worker (real visitors' workers are
@@ -237,6 +245,6 @@ test.describe('with its own server', () => {
     // From now on the card comes from the network again: without it, there's nothing to show.
     server.setOffline(true);
     await expect(page.reload()).rejects.toThrow();
-    await context.close();
+    await done();
   });
 });

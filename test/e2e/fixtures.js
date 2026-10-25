@@ -10,26 +10,32 @@ export { expect };
 // next visit registers it; the service-worker tests prove registration works in every engine.
 const navigatedAway = /^page error: \S*\/sw\.js due to access control checks\.$/;
 
+// Watches a page for what no test may cause, and returns the list of problems it finds. For pages
+// a test opens itself (in a context of its own); the `page` fixture below watches its own.
+export async function watch(page, origin, allow) {
+  const problems = [];
+  const report = (text) => allow?.test(text) || navigatedAway.test(text) || problems.push(text);
+  page.on('console', (m) => m.type() === 'error' && report(`console error: ${m.text()}`));
+  page.on('pageerror', (e) => report(`page error: ${e.message}`));
+  page.on('request', (r) => {
+    const url = r.url();
+    if (/^https?:/.test(url) && new URL(url).origin !== origin) report(`request to another origin: ${url}`);
+  });
+  await page.addInitScript(() =>
+    document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`)),
+  );
+  return problems;
+}
+export const expectNoProblems = (problems) =>
+  expect(problems, 'console errors, page errors, CSP violations or requests to other origins').toEqual([]);
+
 export const test = base.extend({
   allow: [null, { option: true }], // a RegExp of messages a test expects
 
   page: async ({ page, baseURL, allow }, use, testInfo) => {
-    const origin = new URL(baseURL).origin;
-    const problems = [];
-    const report = (text) => allow?.test(text) || navigatedAway.test(text) || problems.push(text);
-    page.on('console', (m) => m.type() === 'error' && report(`console error: ${m.text()}`));
-    page.on('pageerror', (e) => report(`page error: ${e.message}`));
-    page.on('request', (r) => {
-      const url = r.url();
-      if (/^https?:/.test(url) && new URL(url).origin !== origin) report(`request to another origin: ${url}`);
-    });
-    await page.addInitScript(() =>
-      document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`)),
-    );
+    const problems = await watch(page, new URL(baseURL).origin, allow);
     await use(page);
     // After a failure the report's own screenshot can trip the CSP in WebKit; the failure already says enough.
-    if (testInfo.status === testInfo.expectedStatus) {
-      expect(problems, 'console errors, page errors, CSP violations or requests to other origins').toEqual([]);
-    }
+    if (testInfo.status === testInfo.expectedStatus) expectNoProblems(problems);
   },
 });

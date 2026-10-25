@@ -37,7 +37,8 @@ npm run test:smoke                               # the live site (SMOKE_URL=… 
 - requests anything from another origin.
 
 A test that provokes an error on purpose, such as a failed image, names what it expects with
-`test.use({ allow: /…/ })`.
+`test.use({ allow: /…/ })`. A test that opens pages in a context of its own (the service-worker
+tests do) watches them the same way with `watch(page, origin, allow)`.
 
 ## What guards what
 
