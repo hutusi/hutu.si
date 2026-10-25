@@ -62,7 +62,7 @@ A test that provokes an error on purpose, such as a failed image, names what it 
 | identity: bilingual ProfilePage, `rel="me"`, social tags, robots/sitemap, `llms.txt`, all links in agreement | `unit/identity.test.js` |
 | text files served as UTF-8; both sides readable without JavaScript | `e2e/routing.spec.js`, `e2e/card.spec.js` |
 | service worker: precaches exactly the card, never cached itself, kill-switch build | `unit/build.test.js` |
-| service worker: registered only after paint and load; return visits from the cache, even offline; nothing else served by it; a deploy shown next visit; the kill switch | `e2e/service-worker.spec.js` |
+| service worker: registered only after paint and load; return visits from the cache, even offline; nothing else served by it; a deploy shown next visit; a page open across a deploy keeps its assets; the kill switch | `e2e/service-worker.spec.js` |
 | live site: clean load, headers, HTTPS redirect, identity metadata, scripts let in, DNSSEC, certificate | `smoke/production.spec.js` |
 
 `e2e/screenshots.spec.js` attaches screenshots of both sides, with the popup open, to the HTML

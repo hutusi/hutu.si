@@ -4,7 +4,7 @@
 //
 // The first test uses the usual `wrangler dev` server (real CSP and routing). The rest use their
 // own server, so they can swap in another build ("a deploy") and drop the network.
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from '../../scripts/build.mjs';
@@ -15,6 +15,24 @@ test.skip(({ isMobile, hasTouch }) => isMobile || hasTouch, 'runs in the desktop
 
 const controlled = (page) => page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 20_000 });
 const buildName = (page) => page.evaluate(() => document.documentElement.dataset.build ?? 'A');
+// Checks for a new sw.js the way a visit does, without leaving the page, and waits until the new
+// worker has taken over the page ("activated") or failed to install ("redundant").
+const update = (page) =>
+  page.evaluate(async () => {
+    const sw = navigator.serviceWorker;
+    const reg = await sw.getRegistration();
+    const found = new Promise((resolve) => reg.addEventListener('updatefound', () => resolve(reg.installing), { once: true }));
+    const changed = new Promise((resolve) => sw.addEventListener('controllerchange', resolve, { once: true }));
+    await reg.update().catch(() => {});
+    const worker = await found;
+    const state = await new Promise((resolve) => {
+      const settled = () => ['activated', 'redundant'].includes(worker.state) && resolve(worker.state);
+      worker.addEventListener('statechange', settled);
+      settled();
+    });
+    if (state === 'activated') await changed;
+    return state;
+  });
 const cacheContents = (page) =>
   page.evaluate(async () => {
     const out = {};
@@ -49,18 +67,22 @@ test.describe('with its own server', () => {
   let dirs;
   let builds;
   let server;
+  let qr; // the QR code's URL in A and in B
 
   test.beforeAll(async () => {
     const tmp = await mkdtemp(join(tmpdir(), 'hutusi-sw-'));
     dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), K: join(tmp, 'K') };
     // Explicitly on, whatever ENABLED says in src/sw.js, so a kill-switch deploy keeps CI green.
     builds = { A: await build({ outDir: dirs.A, log: () => {}, swEnabled: true }) };
-    // B: the same site after a deploy that changed the page.
+    // B: the same site after a deploy that changed the page and the QR code (so its fingerprint).
     await cp(dirs.A, dirs.B, { recursive: true });
+    qr = { A: builds.A.sw.precache.find((url) => url.includes('wechat-qr')) };
+    qr.B = qr.A.replace(/\.[0-9a-f]{10}\./, `.${'b'.repeat(10)}.`);
+    await rename(join(dirs.B, qr.A), join(dirs.B, qr.B));
     const html = await readFile(join(dirs.B, 'index.html'), 'utf8');
-    await writeFile(join(dirs.B, 'index.html'), html.replace('<html lang="zh-Hans">', '<html lang="zh-Hans" data-build="B">'));
+    await writeFile(join(dirs.B, 'index.html'), html.replace('<html lang="zh-Hans">', '<html lang="zh-Hans" data-build="B">').replaceAll(qr.A, qr.B));
     const sw = await readFile(join(dirs.B, 'sw.js'), 'utf8');
-    await writeFile(join(dirs.B, 'sw.js'), sw.replaceAll(builds.A.sw.version, 'b'.repeat(12)));
+    await writeFile(join(dirs.B, 'sw.js'), sw.replaceAll(builds.A.sw.version, 'b'.repeat(12)).replaceAll(qr.A, qr.B));
     // K: a deploy with the kill switch on.
     builds.K = await build({ outDir: dirs.K, log: () => {}, swEnabled: false });
     server = await serve(dirs.A, { headers: true });
@@ -121,6 +143,19 @@ test.describe('with its own server', () => {
     expect(await buildName(page)).toBe('B');
     // The previous copy is kept for pages still open on it; there's never more than two.
     expect(Object.keys(await cacheContents(page)).sort()).toEqual([`hutusi-${builds.A.sw.version}`, `hutusi-${'b'.repeat(12)}`].sort());
+    await context.close();
+  });
+
+  test('a page still open across a deploy still gets its own assets, even offline', async ({ browser }) => {
+    const { context, page } = await returning(browser);
+    server.setRoot(dirs.B);
+    expect(await update(page)).toBe('activated'); // B now controls this page from A
+    // The page asks for A's QR code (as when the WeChat popup first opens), which B's deploy no
+    // longer has: the copy of A kept for this answers. no-store: as if the HTTP cache had let it go.
+    const status = () => page.evaluate((url) => fetch(url, { cache: 'no-store' }).then((r) => r.status, () => 'network error'), qr.A);
+    expect(await status()).toBe(200);
+    server.setOffline(true);
+    expect(await status()).toBe(200);
     await context.close();
   });
 

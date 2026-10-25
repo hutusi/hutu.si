@@ -49,15 +49,17 @@ self.addEventListener('activate', (event) => {
 });
 
 // Only the card is served from the cache: navigations to "/" (whatever the query, e.g. ?seed=)
-// and the precached assets. Everything else, including the short-link paths /a /w /t,
-// /cdn-cgi/ (analytics), other origins and anything but GET, is left to the network untouched.
+// and its assets: this version's, or the previous version's for a page still open on it (they
+// are fingerprinted, so a cached copy is always right). Everything else, including the
+// short-link paths /a /w /t, /cdn-cgi/ (analytics), other origins and anything but GET, is left
+// to the network untouched.
 self.addEventListener('fetch', (event) => {
   if (!ENABLED) return;
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   const page = url.pathname === '/';
-  if (!page && !PRECACHE.includes(url.pathname)) return;
+  if (!page && !url.pathname.startsWith('/assets/')) return;
   event.respondWith(
     (async () => {
       const key = page ? '/' : request;

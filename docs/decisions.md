@@ -290,7 +290,8 @@ There's no `hreflang`: it describes separate URLs per language, which this site 
 **Decision.** A small service worker (`src/sw.js`) keeps a copy of the card, so return visits
 show it at once, even offline.
 - **What's cached.** Exactly the page and its fingerprinted assets, precached all or nothing.
-  Navigations to `/` (any query) and those assets come from the cache. Everything else goes to
+  Navigations to `/` (any query) and `/assets/` files come from the cache: this version's copy,
+  else the previous one's (for a page still open on it), else the network. Everything else goes to
   the network untouched: `/a`, `/w`, `/t`, `/cdn-cgi/`, other origins, and anything but GET.
 - **Versioning.** The build writes the version and the precache list into `sw.js`. The version
   is a hash of the page, `_headers` and the asset names, so any change to the card or to the
