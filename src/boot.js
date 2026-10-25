@@ -55,13 +55,11 @@
     img.addEventListener('load', () => img.parentNode.classList.remove('wait'));
   }
 
-  // The branch and magpie are an enhancement: load them only after the card is on screen, once
-  // its fonts have arrived or the page has loaded, whichever is first. (Not just on load: the
-  // analytics beacon Cloudflare adds to the page holds the load event back.)
-  let started;
+  // The branch and magpie are an enhancement: load them only once the card is on screen and its
+  // fonts have arrived, so they never compete with it. (Not on the load event: preloads don't
+  // hold it back, so it can fire before the fonts are in, and the analytics beacon Cloudflare
+  // adds to the page can hold it back long after.)
   const scene = () => {
-    if (started) return;
-    started = true;
     const s = document.createElement('script');
     s.type = 'module';
     s.src = 'asset:scene.js';
@@ -75,9 +73,5 @@
           if (list.getEntriesByName('first-contentful-paint').length) observer.disconnect(), go();
         }).observe({ type: 'paint', buffered: true })
       : requestAnimationFrame(() => requestAnimationFrame(go));
-  painted(() => {
-    document.fonts.ready.then(scene);
-    if (document.readyState === 'complete') scene();
-    else addEventListener('load', scene);
-  });
+  painted(() => document.fonts.ready.then(scene));
 })();
