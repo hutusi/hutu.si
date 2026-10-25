@@ -46,8 +46,9 @@ Return visits are served from a copy of the card that a service worker keeps (`s
   visitors to see the change one visit late.
 - **To see the new version yourself at once:** reload twice, or use a private window.
 - **The kill switch,** if a bad version is ever cached:
-  1. In `src/sw.js`, set `const ENABLED = false;`, then commit and push. `npm run verify` checks
-     the kill-switch build too.
+  1. In `src/sw.js`, set `const ENABLED = false;`, then commit and push. The tests build the
+     worker explicitly on and off, so they pass either way and never block this deploy. The unit
+     tests also check the kill-switch build itself.
   2. On each visitor's next visit, the browser fetches the new `sw.js`. No cache can stand in
      its way. It deletes the cached card, unregisters itself and reloads the page from the
      network. The page from that build unregisters any worker instead of registering one.

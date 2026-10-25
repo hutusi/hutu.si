@@ -53,7 +53,8 @@ test.describe('with its own server', () => {
   test.beforeAll(async () => {
     const tmp = await mkdtemp(join(tmpdir(), 'hutusi-sw-'));
     dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), K: join(tmp, 'K') };
-    builds = { A: await build({ outDir: dirs.A, log: () => {} }) };
+    // Explicitly on, whatever ENABLED says in src/sw.js, so a kill-switch deploy keeps CI green.
+    builds = { A: await build({ outDir: dirs.A, log: () => {}, swEnabled: true }) };
     // B: the same site after a deploy that changed the page.
     await cp(dirs.A, dirs.B, { recursive: true });
     const html = await readFile(join(dirs.B, 'index.html'), 'utf8');

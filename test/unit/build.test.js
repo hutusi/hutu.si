@@ -46,36 +46,47 @@ test('no template placeholder or unresolved asset reference is left', () => {
   }
 });
 
-test('the service worker precaches exactly the card, and is never cached itself', async () => {
-  const { version, precache, enabled } = sizes.sw;
-  assert.equal(enabled, true, 'the kill switch is off');
-  assert.match(version, /^[0-9a-f]{12}$/);
-  assert.ok(sizes.swCode.includes(JSON.stringify(version)), 'sw.js carries its version');
-  const assets = [...new Set(pages.index.match(/\/assets\/[\w./-]+/g))];
-  assert.equal(precache[0], '/');
-  for (const asset of assets) assert.ok(precache.includes(asset), `${asset} is precached`);
-  for (const url of precache.slice(1)) {
-    assert.match(url, /^\/assets\//, `only the page and its assets: ${url}`);
-    assert.ok(existsSync(join(dist, url)), `${url} exists`);
+// The service worker is built explicitly on and off, whatever ENABLED says in src/sw.js, so these
+// tests pass with the kill switch in either position: they run before every deploy, and must
+// never block the deploy that ships the kill switch.
+const buildWith = async (swEnabled, check) => {
+  const out = await mkdtemp(join(tmpdir(), `hutusi-sw-${swEnabled ? 'on' : 'off'}-`));
+  try {
+    const result = await build({ outDir: out, log: () => {}, swEnabled });
+    await check(result, out, await readFile(join(out, 'index.html'), 'utf8'), await readFile(join(out, 'sw.js'), 'utf8'));
+    return result.sw.version;
+  } finally {
+    await rm(out, { recursive: true, force: true });
   }
-  assert.ok(!precache.some((u) => /^\/(a|w|t|cdn-cgi)(\/|$)/.test(u)), 'never the short-link paths or /cdn-cgi');
-  assert.match(headers, /^\/sw\.js\n\s+Cache-Control: no-cache$/m);
-  assert.match(directive('worker-src'), /^'self'$/);
-  assert.match(pages.index, /register\("\/sw\.js"\)/, 'the page registers it');
-});
+};
+
+test('the service worker precaches exactly the card, and is never cached itself', () =>
+  buildWith(true, (result, out, index, code) => {
+    const { version, precache, enabled } = result.sw;
+    assert.equal(enabled, true);
+    assert.match(version, /^[0-9a-f]{12}$/);
+    assert.ok(code.includes(JSON.stringify(version)), 'sw.js carries its version');
+    const assets = [...new Set(index.match(/\/assets\/[\w./-]+/g))];
+    assert.equal(precache[0], '/');
+    for (const asset of assets) assert.ok(precache.includes(asset), `${asset} is precached`);
+    for (const url of precache.slice(1)) {
+      assert.match(url, /^\/assets\//, `only the page and its assets: ${url}`);
+      assert.ok(existsSync(join(out, url)), `${url} exists`);
+    }
+    assert.ok(!precache.some((u) => /^\/(a|w|t|cdn-cgi)(\/|$)/.test(u)), 'never the short-link paths or /cdn-cgi');
+    assert.match(headers, /^\/sw\.js\n\s+Cache-Control: no-cache$/m);
+    assert.match(directive('worker-src'), /^'self'$/);
+    assert.match(index, /register\("\/sw\.js"\)/, 'the page registers it');
+  }));
 
 test('with the kill switch on, the worker clears itself and the page unregisters it', async () => {
-  const killed = await mkdtemp(join(tmpdir(), 'hutusi-kill-'));
-  try {
-    const result = await build({ outDir: killed, log: () => {}, swEnabled: false });
+  const on = await buildWith(true, () => {});
+  const off = await buildWith(false, (result, out, index) => {
     assert.equal(result.sw.enabled, false);
-    const index = await readFile(join(killed, 'index.html'), 'utf8');
     assert.doesNotMatch(index, /register\("\/sw\.js"\)/);
     assert.match(index, /getRegistrations\(\)/);
-    assert.notEqual(result.sw.version, sizes.sw.version, 'a new version, so browsers pick it up');
-  } finally {
-    await rm(killed, { recursive: true, force: true });
-  }
+  });
+  assert.notEqual(off, on, 'a new version, so browsers pick it up');
 });
 
 test('every referenced asset exists, fingerprinted and cached for good', () => {

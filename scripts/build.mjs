@@ -185,7 +185,9 @@ export async function build({ outDir = join(ROOT, 'dist'), log = console.log, sw
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const t0 = performance.now();
-  build()
+  // --sw=on|off overrides the service worker's kill switch (the browser tests build it on).
+  const sw = process.argv.find((a) => a.startsWith('--sw='))?.slice(5);
+  build({ swEnabled: sw === undefined ? undefined : sw === 'on' })
     .then(async () => console.log(`\nbuilt dist/ in ${(performance.now() - t0).toFixed(0)} ms, ${(await stat(join(ROOT, 'dist/index.html'))).size} B index.html`))
     .catch((err) => {
       console.error(`\nbuild failed:\n${err.message}`);

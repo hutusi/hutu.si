@@ -112,5 +112,9 @@ pixel.
 - **The service-worker tests** run against their own server (`scripts/lib/serve.mjs` with
   `headers: true`). It applies `_headers`, swaps in another build ("a deploy") and drops
   connections ("offline") the same way in every engine.
+- **The service worker is built explicitly** on (and, for the kill-switch tests, off), whatever
+  `ENABLED` says in `src/sw.js`: `build({ swEnabled })` in the tests, `--sw=on` for the
+  `wrangler dev` server. The tests then pass with the switch in either position, so they never
+  block the deploy that ships it.
 - **The kill-switch test** allows up to three visits. A browser may skip its update check right
   after installing a worker; real visitors' workers are older.
