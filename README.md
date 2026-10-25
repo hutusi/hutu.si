@@ -6,7 +6,8 @@ petals fall when it lands or flutters, or when you brush a blossom. Every visit 
 different branch (`?seed=N` reproduces one).
 
 No framework and no runtime dependencies. Visitors load one HTML file, five small font
-subsets, two images and one deferred script, all from hutu.si.
+subsets, two images and one deferred script, all from hutu.si, plus the Cloudflare Web
+Analytics beacon that the edge adds to the page.
 
 ## How it loads
 
@@ -19,7 +20,7 @@ subsets, two images and one deferred script, all from hutu.si.
 - **The scene comes last.** The branch, magpie and petals load as a module after the page has
   painted. The loop sleeps whenever nothing moves and stops while the tab is hidden. With reduced
   motion it draws the finished scene and holds still.
-- **Budget.** A first visit is about 82 KB compressed. `npm run build` fails above 150 KB.
+- **Budget.** A first visit is about 82 KB compressed, plus the 10 KB analytics beacon. `npm run build` fails above 150 KB.
 
 ## Layout
 
@@ -73,10 +74,13 @@ other branches get a preview deployment (`npx wrangler preview`) linked from the
 - Static files and the 404 page are served by the asset layer without running Worker code.
   Only `/a`, `/w` and `/t` (reserved for short links) reach `src/worker.js`, which returns 404
   for now.
-- `_headers` sets immutable caching for `/assets/*` and a CSP that allows only the page's own
-  inline code by hash.
+- `_headers` sets immutable caching for `/assets/*` and a CSP that allows the page's own
+  inline code by hash, plus the Web Analytics beacon (`static.cloudflareinsights.com`, reporting
+  to `/cdn-cgi/rum`).
+- Web Analytics (Speed → Real user monitoring) is on: the edge adds its beacon, a deferred
+  module of about 10 KB, to each HTML response.
 - Keep these zone features **off**: they rewrite the HTML (breaking the CSP hashes) or add
-  third-party requests. Email Obfuscation, Rocket Loader, Automatic HTTPS Rewrites, Web
-  Analytics auto-injection, Zaraz.
+  third-party requests. Email Obfuscation, Rocket Loader, Automatic HTTPS Rewrites, Zaraz.
+- Keep **Always Use HTTPS** on (SSL/TLS → Edge Certificates); the Worker doesn't redirect.
 
 The design is in Claude Design ("John Hu's Personal Homepage Directions", options 4a and 5a).
