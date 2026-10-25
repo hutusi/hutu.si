@@ -197,10 +197,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .front .social a:hover, .front .wx button:hover { color: var(--cinnabar); }
 .back .social a:hover, .back .wx button:hover { color: #fff; }
 
-/* WeChat QR popup: hover on pointer devices, click/tap/keyboard everywhere (boot.js). */
-.wx { position: relative; display: flex; }
+/* WeChat QR popup: hover on pointer devices, click/tap/keyboard everywhere (boot.js). The
+   wrapper is the icon box and the button fills it: an empty button's baseline is its bottom in
+   Chrome but its middle in WebKit, which would drop the icon below the others. (Border-box,
+   as the button was, keeps the row's spacing.) */
+.wx { box-sizing: border-box; }
+.wx button { position: absolute; inset: 0; }
 .pop {
-  position: absolute; left: 50%; bottom: 40px; z-index: 1; width: 148px; box-sizing: border-box; padding: 12px 12px 10px;
+  position: absolute; left: 50%; bottom: 50.8px; z-index: 1; width: 148px; box-sizing: border-box; padding: 12px 12px 10px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   border-radius: 4px; background: #fffdf8; color: var(--ink); text-shadow: none;
   font-size: 12px; line-height: 1.2; text-align: center;
@@ -247,7 +251,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .social { align-self: center; justify-self: auto; margin: 0 0 0 -17px; gap: 0; font-size: 15px; }
   .ic { top: calc(22px - .2em); height: 44px; padding: 0 17px; }
   .mail { margin-left: 0; padding-left: 17px; line-height: 44px; }
-  .pop { bottom: 46px; }
+  .pop { bottom: 65px; }
   .seal { width: 46px; height: 46px; top: var(--seal-t); }
   .front .seal { left: auto; right: 36px; }
   .back .seal { left: 36px; }
