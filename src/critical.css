@@ -74,7 +74,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   transition: transform .6s cubic-bezier(.2, .7, .2, 1);
   animation: press .75s cubic-bezier(.2, .7, .2, 1) 2.12s;
 }
-.flip { transform-style: preserve-3d; transition: transform .9s cubic-bezier(.45, 0, .2, 1); cursor: pointer; }
+.flip {
+  transform-style: preserve-3d; transition: transform .9s cubic-bezier(.45, 0, .2, 1); cursor: pointer;
+  /* The card's thickness, drawn below and to the right of the front. */
+  --edge: .8px .8px 0 oklch(.62 .11 30), 1.6px 1.6px 0 oklch(.57 .13 30), 2.4px 2.4px 0 oklch(.52 .14 30), 3.2px 3.2px 0 oklch(.46 .13 30), 3.6px 3.8px 1px rgba(50, 24, 14, .28);
+}
 .en .flip { transform: rotateY(180deg); }
 /* The painted edge: thin layers stacked through the card's thickness show while it turns. */
 .e { border-radius: 5px; background: oklch(.47 .16 30); pointer-events: none; }
@@ -94,7 +98,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .front {
   background: #f3ead6; color: var(--ink);
-  box-shadow: .8px .8px 0 oklch(.62 .11 30), 1.6px 1.6px 0 oklch(.57 .13 30), 2.4px 2.4px 0 oklch(.52 .14 30), 3.2px 3.2px 0 oklch(.46 .13 30), 3.6px 3.8px 1px rgba(50, 24, 14, .28);
+  box-shadow: var(--edge);
   transform: translateZ(2.5px);
 }
 .back {
@@ -301,11 +305,19 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 @keyframes ink-in { from { filter: blur(8px); } }
 @keyframes stamp { from { transform: scale(1.9) rotate(-18deg); opacity: 0; } }
 @keyframes press { 30% { transform: translateZ(-9.6px); } }
-@keyframes cross-fade { from { opacity: 0; } }
 .seen .card, .seen .tilt, .seen .seal, .seen .body { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .card, .tilt, .seal, .body { animation: none !important; }
   .flip, .shadow, .contact, .tilt { transition: none; }
-  .en .back, html:not(.en) .front { animation: cross-fade .3s ease; }
+  /* Flipping becomes a 0.3 s cross-fade in place: no turn, no lift. The faces lie flat, the back
+     on top, and only the back's opacity changes, over a front kept opaque, so the card never
+     turns see-through mid-fade. Without the turn, both sides show the same edge. */
+  .card.lift { --lift: 0; }
+  .flip, .en .flip { transform: none; transform-style: flat; }
+  .front, .back { transform: none; }
+  .back { box-shadow: var(--edge); transition: opacity .3s ease, visibility 0s; }
+  html:not(.en) .back { opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility 0s .3s; }
+  .front { transition: visibility 0s; }
+  .en .front { visibility: hidden; transition: visibility 0s .3s; }
 }

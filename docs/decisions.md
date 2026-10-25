@@ -138,8 +138,9 @@ page draws nothing.
 - **One side at a time.** The hidden side is `inert`, and `<html lang>` follows the visible side.
 - **Keyboard.** A flip button appears on keyboard focus, and the popup works by keyboard and
   closes with Escape, even while hovered.
-- **Motion and contrast.** Reduced motion shows the finished scene, still; small text meets WCAG
-  AA contrast.
+- **Motion and contrast.** Reduced motion shows the finished scene, still, and the card doesn't
+  turn when flipped: its sides cross-fade in place over 0.3 s. Small text meets WCAG AA
+  contrast.
 
 **Why.** It's a calling card: it has to work for everyone, and a screen reader should hear one
 language at a time.

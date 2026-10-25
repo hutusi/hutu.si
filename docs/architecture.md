@@ -113,6 +113,9 @@ Optical alignments the design measured at runtime are measured once with the rea
 
 - **Sides.** `html.en` turns `.flip` 180°. The hidden face gets `inert`, so it's out of the tab
   order and the accessibility tree, and `<html lang>` follows the visible side.
+- **Reduced motion.** The card doesn't turn or lift. The faces lie flat, the back on top, and
+  only the back's opacity changes over 0.3 s, over a front kept opaque, so the card is never
+  see-through mid-fade.
 - **Flipping.** A click or tap on the card flips it, except on links, buttons, images and the
   popup. The flip button is visually hidden until it gets keyboard focus.
 - **WeChat popup.** It opens on hover (pointer devices), click, tap, Enter or Space, and closes
