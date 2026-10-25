@@ -332,6 +332,11 @@ addEventListener('stage', () => {
 reduceMotion.addEventListener('change', () => {
   scene.reduce = reduceMotion.matches;
   if (scene.reduce) reset({ seed: scene.seed, instant: true });
+  else if (scene.magpie) {
+    // The bird was held still (and the loop asleep); let it blink and look round again.
+    scene.magpie.still = false;
+    wake();
+  }
 });
 again.addEventListener('click', () => reset({ seed: randomSeed(), instant: scene.reduce }));
 
