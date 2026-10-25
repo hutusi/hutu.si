@@ -64,9 +64,8 @@ export async function checkCoverage(templatePath, manifestPath) {
   let manifest;
   try {
     manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  } catch {
-    console.warn('warning: no font manifest yet; run `npm run fonts`');
-    return [];
+  } catch (err) {
+    throw new Error(`cannot read the font manifest (${err.message}); run \`npm run fonts\``);
   }
   const need = await charsets(templatePath);
   const errors = [];
