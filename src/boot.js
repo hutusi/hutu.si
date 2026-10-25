@@ -47,6 +47,13 @@
     if (e.key === 'Escape') for (const wx of popups) show(wx, false);
   });
 
+  // A logo still on its way fades in over its placeholder (if it fails, the placeholder stays).
+  for (const img of document.querySelectorAll('.seal img')) {
+    if (img.complete) continue;
+    img.parentNode.classList.add('wait');
+    img.addEventListener('load', () => img.parentNode.classList.remove('wait'));
+  }
+
   // The branch and magpie are an enhancement: load them only after the card is on screen, once
   // its fonts have arrived or the page has loaded, whichever is first. (Not just on load: the
   // analytics beacon Cloudflare adds to the page holds the load event back.)
