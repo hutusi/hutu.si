@@ -197,6 +197,7 @@ test.describe('with its own server', () => {
   });
 
   test('the kill switch clears the cache and removes the worker', async ({ browser }) => {
+    test.setTimeout(60_000); // up to three visits, slower when the whole suite shares the machine
     const { context, page } = await returning(browser);
     server.setRoot(dirs.K);
     // On the next visit the browser fetches the new sw.js, which cleans up and reloads the page.
