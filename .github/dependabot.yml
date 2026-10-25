@@ -1,0 +1,23 @@
+# Weekly update PRs, grouped so related packages move together (all the Playwright packages, for
+# example). Each PR runs CI and gets a Workers preview; versions stay pinned exactly.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        patterns: ['*']
+    commit-message:
+      prefix: build
+      include: scope
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
