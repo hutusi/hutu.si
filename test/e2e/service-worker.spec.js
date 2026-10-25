@@ -4,7 +4,7 @@
 //
 // The first test uses the usual `wrangler dev` server (real CSP and routing). The rest use their
 // own server, so they can swap in another build ("a deploy") and drop the network.
-import { cp, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from '../../scripts/build.mjs';
@@ -36,7 +36,10 @@ const update = (page) =>
 const cacheContents = (page) =>
   page.evaluate(async () => {
     const out = {};
-    for (const key of await caches.keys()) out[key] = (await (await caches.open(key)).keys()).map((r) => new URL(r.url).pathname).sort();
+    // Each version's copy (the worker's record of the order they took over in aside).
+    for (const key of await caches.keys()) {
+      if (key !== 'hutusi-order') out[key] = (await (await caches.open(key)).keys()).map((r) => new URL(r.url).pathname).sort();
+    }
     return out;
   });
 
@@ -71,7 +74,7 @@ test.describe('with its own server', () => {
 
   test.beforeAll(async () => {
     const tmp = await mkdtemp(join(tmpdir(), 'hutusi-sw-'));
-    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), C: join(tmp, 'C'), F: join(tmp, 'F'), K: join(tmp, 'K') };
+    dirs = { A: join(tmp, 'A'), B: join(tmp, 'B'), C: join(tmp, 'C'), F: join(tmp, 'F'), R: join(tmp, 'R'), K: join(tmp, 'K') };
     // Explicitly on, whatever ENABLED says in src/sw.js, so a kill-switch deploy keeps CI green.
     builds = { A: await build({ outDir: dirs.A, log: () => {}, swEnabled: true }) };
     // B and C: later deploys, each of which changed the page and the QR code (so its fingerprint).
@@ -91,6 +94,9 @@ test.describe('with its own server', () => {
     const failing = sw.replaceAll(builds.A.sw.version, 'f'.repeat(12)).replace('["/",', '["/","/assets/missing.0000000000.js",');
     if (!failing.includes('missing')) throw new Error('could not add a missing file to F\'s precache list');
     await writeFile(join(dirs.F, 'sw.js'), failing);
+    // R: a rollback to A that fails to install: A's sw.js again, but its page doesn't load.
+    await cp(dirs.A, dirs.R, { recursive: true });
+    await unlink(join(dirs.R, 'index.html'));
     // K: a deploy with the kill switch on.
     builds.K = await build({ outDir: dirs.K, log: () => {}, swEnabled: false });
     server = await serve(dirs.A, { headers: true });
@@ -193,6 +199,22 @@ test.describe('with its own server', () => {
     expect(await status()).toBe(200);
     server.setOffline(true);
     expect(await status()).toBe(200);
+    await context.close();
+  });
+
+  test('a failed rollback leaves the copy it would have replaced whole', async ({ browser }) => {
+    const { context, page } = await returning(browser);
+    server.setRoot(dirs.B);
+    expect(await update(page)).toBe('activated');
+    server.setRoot(dirs.R);
+    expect(await update(page)).toBe('redundant');
+    // B stays in charge, and A's copy stays whole for this page, still open on A.
+    expect(await cacheContents(page)).toEqual({
+      [`hutusi-${builds.A.sw.version}`]: [...builds.A.sw.precache].sort(),
+      [`hutusi-${'b'.repeat(12)}`]: builds.A.sw.precache.map((url) => (url === qr.A ? qr.B : url)).sort(),
+    });
+    server.setOffline(true);
+    expect(await page.evaluate((url) => fetch(url, { cache: 'no-store' }).then((r) => r.status, () => 'network error'), qr.A)).toBe(200);
     await context.close();
   });
 

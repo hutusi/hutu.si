@@ -126,8 +126,8 @@ async function report(dist, html, sw, log) {
 // The service worker (src/sw.js). The build writes in its precache list and this build's version:
 // a hash of the rest of sw.js, the page and its response headers. So any change to what the
 // cached card is served with changes sw.js, which is how browsers notice a new copy, and sw.js
-// never changes without its version (each install then gets a cache of its own). `enabled` is
-// the kill switch.
+// never changes without its version, so a version names exactly one worker and its copy.
+// `enabled` is the kill switch.
 async function serviceWorker(dist, index, headers, enabled) {
   const assets = (await walk(join(dist, 'assets'))).map((f) => `/${relative(dist, f).replaceAll('\\', '/')}`).sort();
   const precache = ['/', ...assets];

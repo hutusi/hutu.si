@@ -298,9 +298,10 @@ show it at once, even offline.
   change to the card or to the headers it is served with changes `sw.js` (a cached page keeps
   the headers it was cached with, CSP included), and `sw.js` never changes without its version.
 - **Updates.** Browsers re-check `sw.js` on each visit (it is served `no-cache`). A new copy
-  installs in the background, and the next visit shows it. The previous complete copy is kept
-  for pages still open across a deploy; a failed update never replaces it. Each install fills
-  a new cache, so after a rollback the rolled-back version counts as the newest.
+  installs in the background, and the next visit shows it. The copy of the version that took
+  over before it is kept for pages still open across a deploy. The worker records that order
+  itself (a rollback takes over again, so it counts as the newest), and an install stores all
+  of its copy or nothing, so a failed update or rollback never touches a complete copy.
 - **First visits.** The worker is registered only after the card has painted, the page has
   loaded and the browser is idle.
 - **Kill switch.** `ENABLED` in `src/sw.js` (see [operations.md](operations.md#the-service-worker)).

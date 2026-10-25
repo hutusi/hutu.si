@@ -12,18 +12,16 @@ const ENABLED = true;
 const VERSION = '{{version}}';
 const PRECACHE = ['{{precache}}']; // "/" and every file under /assets/
 const CACHE = `hutusi-${VERSION}`;
+const ORDER = 'hutusi-order'; // a record of the versions that took over, the latest last
 const ours = (key) => key.startsWith('hutusi-');
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       if (ENABLED) {
-        // All or nothing: one failed fetch fails the install, so a half copy is never used. The
-        // page is revalidated; the assets never change, so the HTTP cache may supply them.
-        // Always into a new cache, even when this version had one (a rollback): caches are listed
-        // in the order they were created, which activate relies on to find the previous version.
-        // (The build makes the version change whenever sw.js does, so this is never the live one.)
-        await caches.delete(CACHE);
+        // All or nothing: addAll stores every response or none, so a failed install never
+        // leaves a half copy, nor touches the copy a rollback was refilling. The page is
+        // revalidated; the assets never change, so the HTTP cache may supply them.
         const cache = await caches.open(CACHE);
         await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: url === '/' ? 'no-cache' : 'default' })));
       }
@@ -43,14 +41,14 @@ self.addEventListener('activate', (event) => {
         for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url).catch(() => {});
         return;
       }
-      // Keep this version and the newest complete one before it: a page still open on the old
-      // version can then still load its lazy assets (the QR code) after a deploy. A failed
-      // install leaves an empty cache (addAll stores all or nothing), never the one to keep.
-      let kept = false;
-      for (const key of keys.filter((key) => key !== CACHE).reverse()) {
-        if (!kept && (await (await caches.open(key)).keys()).length) kept = true;
-        else await caches.delete(key);
-      }
+      // Keep this version and the one that took over before it: a page still open on that one
+      // can then still load its lazy assets (the QR code) after a deploy. Only a complete install
+      // takes over, so a failed one is never kept, and a rollback counts as taking over again.
+      const record = await caches.open(ORDER);
+      const before = (await (await record.match('versions'))?.json()) ?? [];
+      const previous = before.filter((key) => key !== CACHE && keys.includes(key)).at(-1);
+      await record.put('versions', new Response(JSON.stringify([previous, CACHE].filter(Boolean))));
+      await Promise.all(keys.filter((key) => ![CACHE, previous, ORDER].includes(key)).map((key) => caches.delete(key)));
       await self.clients.claim();
     })(),
   );
