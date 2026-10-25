@@ -164,9 +164,9 @@ Optical alignments the design measured at runtime are measured once with the rea
 3. Concatenate and minify `fonts.css` + `critical.css` + `align.css`, and minify `head.js` and
    `boot.js`. Inline all of them into `index.html`, resolving `asset:` references and adding
    the preload links.
-4. Write `sw.js` from `src/sw.js`, with this build's version (a hash of the page and the asset
-   names) and its precache list (`/` plus every `/assets/` file). Write `_headers` with the
-   sha256 hash of every inline script and style in `index.html` and `404.html`.
+4. Write `_headers` with the sha256 hash of every inline script and style in `index.html` and
+   `404.html`. Then write `sw.js` from `src/sw.js`, with this build's version (a hash of the
+   page, `_headers` and the asset names) and its precache list (`/` plus every `/assets/` file).
 5. **Fail** if a character on the card is missing from the font subsets
    (`assets/fonts/manifest.json`), or if `index.html` is over 14 KB gzip or a first visit over
    150 KB gzip.

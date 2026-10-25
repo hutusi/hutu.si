@@ -292,8 +292,10 @@ show it at once, even offline.
 - **What's cached.** Exactly the page and its fingerprinted assets, precached all or nothing.
   Navigations to `/` (any query) and those assets come from the cache. Everything else goes to
   the network untouched: `/a`, `/w`, `/t`, `/cdn-cgi/`, other origins, and anything but GET.
-- **Versioning.** The build writes the version and the precache list into `sw.js`, so any
-  change to the card changes `sw.js`.
+- **Versioning.** The build writes the version and the precache list into `sw.js`. The version
+  is a hash of the page, `_headers` and the asset names, so any change to the card or to the
+  headers it is served with changes `sw.js`. (A cached page keeps the headers it was cached
+  with, CSP included.)
 - **Updates.** Browsers re-check `sw.js` on each visit (it is served `no-cache`). A new copy
   installs in the background, and the next visit shows it. The previous copy is kept for pages
   still open across a deploy.

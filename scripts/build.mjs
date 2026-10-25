@@ -2,8 +2,8 @@
 //   - inlines the critical CSS and the two small scripts into index.html (the card must render
 //     from the first network round trip, so nothing it needs may live in another file),
 //   - bundles the deferred scene module and fingerprints everything under assets/,
-//   - writes the service worker with this build's version and precache list,
 //   - writes _headers with CSP hashes for the inline code,
+//   - writes the service worker with this build's version and precache list,
 //   - fails when a page character is missing from the font subsets or a size budget is blown.
 import { build as bundle, transform } from 'esbuild';
 import { createHash } from 'node:crypto';
@@ -123,13 +123,14 @@ async function report(dist, html, sw, log) {
   return { errors, html: rows[0], total };
 }
 
-// The service worker (src/sw.js). The build writes in this build's version (a hash of the page
-// and the asset names) and its precache list, so any change to the card changes sw.js, which is
-// how browsers notice a new copy. `enabled` is the kill switch.
-async function serviceWorker(dist, index, enabled) {
+// The service worker (src/sw.js). The build writes in this build's version (a hash of the page,
+// its response headers and the asset names) and its precache list, so any change to what the
+// cached card is served with changes sw.js, which is how browsers notice a new copy. `enabled`
+// is the kill switch.
+async function serviceWorker(dist, index, headers, enabled) {
   const assets = (await walk(join(dist, 'assets'))).map((f) => `/${relative(dist, f).replaceAll('\\', '/')}`).sort();
   const precache = ['/', ...assets];
-  const version = sha(index + precache.join('\n')).slice(0, 12);
+  const version = sha([index, headers, ...precache].join('\n')).slice(0, 12);
   const code = (await readFile(join(SRC, 'sw.js'), 'utf8'))
     .replace(/const ENABLED = (true|false);/, `const ENABLED = ${enabled};`)
     .replace("'{{version}}'", JSON.stringify(version))
@@ -169,13 +170,13 @@ export async function build({ outDir = join(ROOT, 'dist'), log = console.log, sw
   const notFound = await page('404.html', map, {});
   await writeFile(join(dist, 'index.html'), index);
   await writeFile(join(dist, '404.html'), notFound);
-  const sw = await serviceWorker(dist, index, enabled);
 
   const both = index + notFound;
   const headers = (await readFile(join(SRC, '_headers'), 'utf8'))
     .replace('{{script-hashes}}', [...new Set(hashesOf(both, 'script'))].join(' '))
     .replace('{{style-hashes}}', [...new Set(hashesOf(both, 'style'))].join(' '));
   await writeFile(join(dist, '_headers'), headers);
+  const sw = await serviceWorker(dist, index, headers, enabled);
 
   const sizes = await report(dist, index, sw.code, log);
   const errors = [...(await checkCoverage(join(SRC, 'index.html'), join(ROOT, 'assets/fonts/manifest.json'))), ...sizes.errors];

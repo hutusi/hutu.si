@@ -40,7 +40,8 @@ Workers & Pages → hutu-si → Settings → Builds:
 Return visits are served from a copy of the card that a service worker keeps (`src/sw.js`; see
 [decisions.md](decisions.md#18-a-service-worker-for-return-visits)).
 
-- **How a deploy reaches visitors.** Each deploy that changes the card changes `sw.js`. On a
+- **How a deploy reaches visitors.** Each deploy that changes the card or its headers
+  (`_headers`) changes `sw.js`. On a
   visitor's next visit the browser notices, shows the cached card, and installs the new copy in
   the background; the visit after that shows the new card. So after a deploy, expect returning
   visitors to see the change one visit late.

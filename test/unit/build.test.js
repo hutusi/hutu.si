@@ -61,11 +61,15 @@ const buildWith = async (swEnabled, check) => {
 };
 
 test('the service worker precaches exactly the card, and is never cached itself', () =>
-  buildWith(true, (result, out, index, code) => {
+  buildWith(true, async (result, out, index, code) => {
     const { version, precache, enabled } = result.sw;
     assert.equal(enabled, true);
     assert.match(version, /^[0-9a-f]{12}$/);
     assert.ok(code.includes(JSON.stringify(version)), 'sw.js carries its version');
+    // It covers everything a cached page is served with, so a deploy that changes only the
+    // headers (the CSP, say) reaches returning visitors too.
+    const served = [index, await readFile(join(out, '_headers'), 'utf8'), ...precache].join('\n');
+    assert.equal(version, createHash('sha256').update(served).digest('hex').slice(0, 12), 'the version covers the page, its headers and its assets');
     const assets = [...new Set(index.match(/\/assets\/[\w./-]+/g))];
     assert.equal(precache[0], '/');
     for (const asset of assets) assert.ok(precache.includes(asset), `${asset} is precached`);
