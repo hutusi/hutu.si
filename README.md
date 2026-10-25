@@ -105,7 +105,14 @@ licence texts are served under `/licenses/`.
 
 ## Licence
 
-The code is MIT-licensed ([LICENSE](LICENSE)). The card's content, the design, the logo and
-portrait, the QR code and the fonts are not covered by it; see the licence for details.
+The code is licensed under the [MIT License](LICENSE). The licence covers the code only; these
+are not covered by it and remain all rights reserved unless stated otherwise:
+
+- the card's content: its text, names and links;
+- the visual design of the card and of the scene;
+- the logo and portrait (`sources/logo.jpg` and every image derived from it, including the
+  favicon, the touch icon and the social preview);
+- the WeChat QR code (`sources/wechat-qr.jpg` and the images derived from it);
+- the fonts in `assets/fonts/`, distributed under their own licences in `static/licenses/`.
 
 The design is in Claude Design ("John Hu's Personal Homepage Directions", options 4a and 5a).

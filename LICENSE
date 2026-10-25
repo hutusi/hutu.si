@@ -1,14 +1,3 @@
-The code in this repository is licensed under the MIT License below. The licence does not
-cover the following, which remain all rights reserved unless stated otherwise:
-
-- the card's content: its text, names and links;
-- the visual design of the card and of the scene;
-- the logo and portrait (sources/logo.jpg and every image derived from it, including the
-  favicon, the touch icon and the social preview);
-- the WeChat QR code (sources/wechat-qr.jpg and the images derived from it);
-- the fonts in assets/fonts/, which are distributed under their own licences in
-  static/licenses/.
-
 MIT License
 
 Copyright (c) 2026 John Hu
