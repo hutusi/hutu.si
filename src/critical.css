@@ -260,11 +260,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .front .name { font-size: 38px; margin: 0; }
   .front .role { font-size: 18px; line-height: 1; letter-spacing: .06em; }
   .front .sep { display: none; }
-  .front .sep-v { display: inline-block; inline-size: 1em; }
+  .front .sep-v { display: inline-block; inline-size: var(--vsep-h, auto); }
   .front .links { display: flex; flex-direction: column; margin-block: -14px; font-size: 19px; line-height: 1; letter-spacing: .06em; }
   .front .links a { display: block; padding-block: 14px; background: none; }
-  /* Two characters and their tracking, fixed so the values don't move when the font swaps in. */
-  .front .k { display: inline-block; inline-size: 2.32em; padding: 0; margin-inline-end: 10px; font-size: 14px; }
+  /* Label and separator lengths are pinned (align.css) so nothing moves when the font swaps in. */
+  .front .k { display: inline-block; inline-size: var(--vk-h, auto); padding: 0; margin-inline-end: 10px; font-size: 14px; }
   .deboss-lat { font-size: 74px; }
 
   /* Back: centred column with a two-column link table. */

@@ -7,7 +7,9 @@
 //     continues the link rows' rhythm with its baseline level with the role line;
 //   - on tall cards the seal is centred on the wordmark.
 // It also pins sizes that would otherwise change when the fonts swap in: the small-caps label
-// column on wide cards, and the height of the vertical text on tall ones.
+// column on wide cards, and on tall ones the vertical text's height, labels and separator
+// (Zhuque Fangsong has no vertical metrics, so vertically it sets characters about 1.2em apart
+// where the fallbacks use 1em).
 // Run after changing card text, sizes or fonts: `npm run align`.
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -70,7 +72,7 @@ function measure({ tall, margin }) {
   for (const face of document.querySelectorAll('.face')) {
     const vars = {};
     // The page already has the current align.css; measure natural sizes, not those it pins.
-    for (const pin of ['--k-w', '--vgroup-h']) face.style.setProperty(pin, 'auto');
+    for (const pin of ['--k-w', '--vgroup-h', '--vk-h', '--vsep-h']) face.style.setProperty(pin, 'auto');
     const deboss = face.querySelector('.deboss');
     const seal = face.querySelector('.seal');
     const cjk = deboss.classList.contains('deboss-cjk');
@@ -83,7 +85,11 @@ function measure({ tall, margin }) {
     else if (tall) vars['--dbx-l'] = px(margin + whole.actualBoundingBoxLeft);
     else vars['--dbx-l'] = px(face.offsetWidth - margin - whole.actualBoundingBoxRight);
     if (tall) {
-      if (!cjk) vars['--vgroup-h'] = px(face.querySelector('.main').offsetHeight);
+      if (!cjk) {
+        vars['--vgroup-h'] = px(face.querySelector('.main').offsetHeight);
+        vars['--vk-h'] = px(face.querySelector('.links .k').getBoundingClientRect().height);
+        vars['--vsep-h'] = px(face.querySelector('.sep-v').getBoundingClientRect().height);
+      }
       const mid = inkTop + (cjk ? (top.actualBoundingBoxAscent + whole.actualBoundingBoxDescent) / 2 : top.actualBoundingBoxAscent / 2);
       vars['--seal-t'] = px(mid - seal.offsetHeight / 2);
     } else {
