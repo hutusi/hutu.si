@@ -51,6 +51,9 @@ After changing any text on the card: `npm run fonts`, `npm run align`, `npm run 
 11. **Identity data stays consistent.** A profile link lives in four places: both faces, the
     JSON-LD `sameAs`, and `static/llms.txt`. The bio lives in two: the JSON-LD and `llms.txt`.
     Change them together; `test/unit/identity.test.js` checks.
+12. **The service worker caches only the card:** `/` and `/assets/`. Never the short-link
+    paths, `/cdn-cgi/`, other origins or non-GET requests. It registers only after paint, load
+    and idle. Its kill switch is `ENABLED` in `src/sw.js`; see `docs/operations.md`.
 
 ## Workflow
 
