@@ -45,6 +45,23 @@ test('plain HTTP redirects to HTTPS, and reserved paths answer 404', async ({ re
   expect((await request.get('/a/x')).status()).toBe(404);
 });
 
+test('search engines and agents get the identity metadata', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
+  expect(ld.mainEntity.name).toBe('胡智勇');
+  expect(ld.mainEntity.alternateName).toEqual(expect.arrayContaining(['John Hu', 'hutusi']));
+  const llms = await request.get('/llms.txt');
+  expect(llms.headers()['content-type']).toBe('text/plain; charset=utf-8');
+  expect(await llms.text()).toContain('胡智勇');
+  expect((await request.get('/sitemap.xml')).status()).toBe(200);
+});
+
+test('simple scripts and agents are let in, not challenged', async ({ request }) => {
+  // Python's urllib default user agent; Cloudflare's Browser Integrity Check refused it (403).
+  const res = await request.get('/', { headers: { 'user-agent': 'Python-urllib/3.12' } });
+  expect(res.status()).toBe(200);
+});
+
 test('DNSSEC validates', async ({ request, baseURL }) => {
   const host = new URL(baseURL).hostname;
   const res = await request.get(`https://cloudflare-dns.com/dns-query?name=${host}&type=A`, { headers: { accept: 'application/dns-json' } });
