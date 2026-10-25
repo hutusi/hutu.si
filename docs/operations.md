@@ -128,6 +128,7 @@ Timings depend on your own network path; compare runs from the same machine.
 - **Headless WebKit shows the back of the card mirrored over the front.** Headless WebKit draws
   without compositing and ignores `backface-visibility`; real Safari is fine. The screenshot
   test hides the far face.
-- **npm 11 warns about install scripts** (esbuild, workerd, fsevents). This is harmless: those
-  packages work, and CI and Workers Builds use Node 24's npm 10.
+- **npm warns about install scripts** (esbuild, workerd, fsevents) on newer npm versions that
+  ask for scripts to be approved. This is harmless: those packages work without them, as the
+  builds in CI and Workers Builds show.
 - **A port is already in use.** `npm run dev` uses 8787 and the browser tests use 8789.

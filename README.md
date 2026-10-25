@@ -60,7 +60,7 @@ Commit the regenerated files (`assets/fonts/`, `src/fonts.css`, `src/align.css`,
 ```
 src/index.html         the page: both faces of the card, one DOM for both layouts
 src/critical.css       inlined styles; "wide" (1280×800) and "tall" (390×844) compositions
-src/head.js, boot.js   inlined scripts: side, scale and intro; flipping, popup, logo, scene loader
+src/head.js, src/boot.js  inlined scripts: side, scale and intro; flipping, popup, logo, scene loader
 src/fonts.css          generated @font-face rules                   (npm run fonts)
 src/align.css          generated optical alignments                 (npm run align)
 src/scene/             the deferred scene: branch, flowers, petals, magpie, paper
