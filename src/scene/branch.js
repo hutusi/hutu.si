@@ -10,17 +10,19 @@ const BLOSSOM_COLOURS = [[188, 92, 88], [198, 106, 98], [176, 84, 82], [204, 118
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 // Moves a limb's start back along its heading until it is off-screen, so the branch always
-// enters from the edge of the viewport ({ x0, y0, x1, y1 } in stage coordinates).
+// enters from the edge of the viewport ({ x0, y0, x1, y1 } in stage coordinates). `lead` is
+// how many path points that adds before the design's own start.
 function offscreen(limb, view) {
   let { x, y } = limb;
   const dx = -Math.cos(limb.a) * 10;
   const dy = -Math.sin(limb.a) * 10;
   const m = 30;
-  for (let i = 0; i < 400 && x > view.x0 - m && x < view.x1 + m && y > view.y0 - m && y < view.y1 + m; i++) {
+  let i = 0;
+  for (; i < 400 && x > view.x0 - m && x < view.x1 + m && y > view.y0 - m && y < view.y1 + m; i++) {
     x += dx;
     y += dy;
   }
-  return { x, y };
+  return { x, y, lead: Math.round((i * 10) / STEP) };
 }
 
 export function growBranch(comp, rand, view) {
@@ -213,20 +215,26 @@ export function growBranch(comp, rand, view) {
     flora.push({ kind: 'moss', x: p.x, y: p.y, dots, t: timeAt(st, i) + R(0.4, 1.2), dur: 0.8 });
   };
 
-  const grow = (st) => {
+  // A limb's flowers and twigs are placed at fractions of its length, measured from the
+  // design's start: an off-screen lead-in (`lead` points, on big screens) doesn't count, or the
+  // fractions would shift onto it and leave the visible limb bare.
+  const grow = (st, lead = 0) => {
     const d = st.depth;
     const n = st.pts.length;
+    const n0 = Math.min(lead, n - 3);
+    const span = n - n0;
     const main = st === strokes[0];
     if (d === 0) {
-      let i = Math.floor(n * 0.12);
+      let i = n0 + Math.floor(span * 0.12);
       while (i < n - 2) {
-        const inWindow = main ? B.mainWindow(st.pts[i], i / (n - 1)) : i / (n - 1) > 0.25;
+        const f = (i - n0) / (span - 1);
+        const inWindow = main ? B.mainWindow(st.pts[i], f) : f > 0.25;
         if (inWindow && rand() < B.mainChance) {
           cluster(st, i);
           i += Math.floor(R(...B.mainStep));
         } else i += Math.floor(R(5, 10));
       }
-      for (let k = 0, m = 2 + Math.floor(rand() * 3); k < m; k++) mossAt(st, Math.floor(R(0.06, 0.7) * n), true);
+      for (let k = 0, m = 2 + Math.floor(rand() * 3); k < m; k++) mossAt(st, n0 + Math.floor(R(0.06, 0.7) * span), true);
     } else {
       for (const k of st.pts.nodes || []) if (rand() < B.nodeBloom[st.focus ? 0 : 1]) cluster(st, k);
       if (d === 1 && rand() < 0.3) mossAt(st, Math.floor(n * R(0.1, 0.4)), false);
@@ -234,12 +242,12 @@ export function growBranch(comp, rand, view) {
     if (d < 3) {
       const mul = d === 0 ? (main ? 1.1 : 1.4) : d === 1 ? (st.focus ? 1.5 : 1) : st.focus ? 1 : 0.6;
       const min = d === 0 ? B.minLimbKids : d === 1 ? (st.focus ? 2 : 1) : 0;
-      const count = Math.max(min, Math.round(((n * STEP) / B.gaps[d]) * R(0.8, 1.2) * mul));
+      const count = Math.max(min, Math.round(((span * STEP) / B.gaps[d]) * R(0.8, 1.2) * mul));
       const anchors = [R(0.15, 0.5), R(0.5, 0.92)];
       let side = rand.sign();
       for (let c = 0, made = 0; made < count && c < count * 6; c++) {
         const fi = Math.min(0.95, Math.max(0.1, anchors[c % 2] + R(-0.1, 0.1)));
-        const i = Math.max(1, Math.floor(fi * (n - 1)));
+        const i = n0 + Math.max(1, Math.floor(fi * (span - 1)));
         const p = st.pts[i];
         if (noBloom(p.x, p.y)) continue;
         side = rand() < 0.72 ? -side : side;
@@ -289,12 +297,13 @@ export function growBranch(comp, rand, view) {
 
   const limbs = B.limbs.map((limb) => {
     const way = limb.way.map(([x, y, j, k]) => ({ x: x + R(-j, j), y: y + R(-j, j), k }));
-    const P = limbPath({ ...offscreen(limb, view), a: limb.a, way, noise: 0.004 });
+    const { lead, ...start } = offscreen(limb, view);
+    const P = limbPath({ ...start, a: limb.a, way, noise: 0.004 });
     if (limb.wobble) wobble(P, limb.wobble);
     const knot = limb.knotAbove ? P.findIndex((p) => p.y < limb.knotAbove) : 0;
     const st = stroke(P, { ...limb, depth: 0, knot });
     if (knot > 0) mossAt(st, knot, true);
-    grow(st);
+    grow(st, lead);
     return st;
   });
 
