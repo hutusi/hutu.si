@@ -15,6 +15,7 @@ let headers;
 before(async () => {
   dist = await mkdtemp(join(tmpdir(), 'hutusi-build-'));
   sizes = await build({ outDir: dist, log: () => {} });
+  sizes.swCode = await readFile(join(dist, 'sw.js'), 'utf8');
   pages = { index: await readFile(join(dist, 'index.html'), 'utf8'), notFound: await readFile(join(dist, '404.html'), 'utf8') };
   headers = await readFile(join(dist, '_headers'), 'utf8');
 });
@@ -40,8 +41,40 @@ test('the CSP allows every inline script and style by hash, and nothing inline b
 });
 
 test('no template placeholder or unresolved asset reference is left', () => {
-  for (const text of [pages.index, pages.notFound, headers]) {
-    assert.doesNotMatch(text, /asset:|\{\{|<!--%/);
+  for (const text of [pages.index, pages.notFound, headers, sizes.swCode]) {
+    assert.doesNotMatch(text, /asset:|\{\{|<!--%|__SERVICE_WORKER__/);
+  }
+});
+
+test('the service worker precaches exactly the card, and is never cached itself', async () => {
+  const { version, precache, enabled } = sizes.sw;
+  assert.equal(enabled, true, 'the kill switch is off');
+  assert.match(version, /^[0-9a-f]{12}$/);
+  assert.ok(sizes.swCode.includes(JSON.stringify(version)), 'sw.js carries its version');
+  const assets = [...new Set(pages.index.match(/\/assets\/[\w./-]+/g))];
+  assert.equal(precache[0], '/');
+  for (const asset of assets) assert.ok(precache.includes(asset), `${asset} is precached`);
+  for (const url of precache.slice(1)) {
+    assert.match(url, /^\/assets\//, `only the page and its assets: ${url}`);
+    assert.ok(existsSync(join(dist, url)), `${url} exists`);
+  }
+  assert.ok(!precache.some((u) => /^\/(a|w|t|cdn-cgi)(\/|$)/.test(u)), 'never the short-link paths or /cdn-cgi');
+  assert.match(headers, /^\/sw\.js\n\s+Cache-Control: no-cache$/m);
+  assert.match(directive('worker-src'), /^'self'$/);
+  assert.match(pages.index, /register\("\/sw\.js"\)/, 'the page registers it');
+});
+
+test('with the kill switch on, the worker clears itself and the page unregisters it', async () => {
+  const killed = await mkdtemp(join(tmpdir(), 'hutusi-kill-'));
+  try {
+    const result = await build({ outDir: killed, log: () => {}, swEnabled: false });
+    assert.equal(result.sw.enabled, false);
+    const index = await readFile(join(killed, 'index.html'), 'utf8');
+    assert.doesNotMatch(index, /register\("\/sw\.js"\)/);
+    assert.match(index, /getRegistrations\(\)/);
+    assert.notEqual(result.sw.version, sizes.sw.version, 'a new version, so browsers pick it up');
+  } finally {
+    await rm(killed, { recursive: true, force: true });
   }
 });
 

@@ -2,6 +2,7 @@
 //   - inlines the critical CSS and the two small scripts into index.html (the card must render
 //     from the first network round trip, so nothing it needs may live in another file),
 //   - bundles the deferred scene module and fingerprints everything under assets/,
+//   - writes the service worker with this build's version and precache list,
 //   - writes _headers with CSP hashes for the inline code,
 //   - fails when a page character is missing from the font subsets or a size budget is blown.
 import { build as bundle, transform } from 'esbuild';
@@ -103,10 +104,10 @@ function sizes(name, data) {
   return row;
 }
 
-async function report(dist, html, log) {
-  // Everything a first visit can load: the page plus every fingerprinted asset (both logo
-  // densities are counted, so this is an upper bound).
-  const rows = [sizes('index.html', Buffer.from(html))];
+async function report(dist, html, sw, log) {
+  // Everything a first visit can load: the page, the service worker (fetched once the page is
+  // idle) and every fingerprinted asset (both logo densities are counted: an upper bound).
+  const rows = [sizes('index.html', Buffer.from(html)), sizes('sw.js', Buffer.from(sw))];
   for (const file of await walk(join(dist, 'assets'))) {
     rows.push(sizes(relative(dist, file), await readFile(file)));
   }
@@ -122,9 +123,27 @@ async function report(dist, html, log) {
   return { errors, html: rows[0], total };
 }
 
+// The service worker (src/sw.js). The build writes in this build's version (a hash of the page
+// and the asset names) and its precache list, so any change to the card changes sw.js, which is
+// how browsers notice a new copy. `enabled` is the kill switch.
+async function serviceWorker(dist, index, enabled) {
+  const assets = (await walk(join(dist, 'assets'))).map((f) => `/${relative(dist, f).replaceAll('\\', '/')}`).sort();
+  const precache = ['/', ...assets];
+  const version = sha(index + precache.join('\n')).slice(0, 12);
+  const code = (await readFile(join(SRC, 'sw.js'), 'utf8'))
+    .replace(/const ENABLED = (true|false);/, `const ENABLED = ${enabled};`)
+    .replace("'{{version}}'", JSON.stringify(version))
+    .replace("['{{precache}}']", JSON.stringify(precache));
+  const out = await minifyJs(code);
+  await writeFile(join(dist, 'sw.js'), out);
+  return { version, precache, enabled, code: out };
+}
+
 // `outDir` lets the local tools (align, og) and the tests build a private copy, so they never
-// race the dev server over dist/. Returns the compressed sizes the budgets were checked against.
-export async function build({ outDir = join(ROOT, 'dist'), log = console.log } = {}) {
+// race the dev server over dist/. `swEnabled` overrides the service worker's kill switch (tests).
+// Returns the compressed sizes the budgets were checked against, and the service worker's
+// version and precache list.
+export async function build({ outDir = join(ROOT, 'dist'), log = console.log, swEnabled } = {}) {
   const dist = outDir;
   await rm(dist, { recursive: true, force: true });
   await mkdir(join(dist, 'assets'), { recursive: true });
@@ -143,12 +162,14 @@ export async function build({ outDir = join(ROOT, 'dist'), log = console.log } =
   const sources = [fontsCss, ...(await Promise.all(['critical.css', 'align.css'].map((f) => readFile(join(SRC, f), 'utf8'))))];
   const css = await minifyCss(resolveAssets(sources.join('\n'), map, 'css'));
   const head = await minifyJs(await readFile(join(SRC, 'head.js'), 'utf8'));
-  const boot = await minifyJs(resolveAssets(await readFile(join(SRC, 'boot.js'), 'utf8'), map, 'boot.js'));
+  const enabled = swEnabled ?? /const ENABLED = true;/.test(await readFile(join(SRC, 'sw.js'), 'utf8'));
+  const boot = await minifyJs(resolveAssets(await readFile(join(SRC, 'boot.js'), 'utf8'), map, 'boot.js').replace(/__SERVICE_WORKER__/g, String(enabled)));
 
   const index = await page('index.html', map, { preload, css: `<style>${css}</style>`, head: `<script>${head}</script>`, boot: `<script>${boot}</script>` });
   const notFound = await page('404.html', map, {});
   await writeFile(join(dist, 'index.html'), index);
   await writeFile(join(dist, '404.html'), notFound);
+  const sw = await serviceWorker(dist, index, enabled);
 
   const both = index + notFound;
   const headers = (await readFile(join(SRC, '_headers'), 'utf8'))
@@ -156,10 +177,10 @@ export async function build({ outDir = join(ROOT, 'dist'), log = console.log } =
     .replace('{{style-hashes}}', [...new Set(hashesOf(both, 'style'))].join(' '));
   await writeFile(join(dist, '_headers'), headers);
 
-  const sizes = await report(dist, index, log);
+  const sizes = await report(dist, index, sw.code, log);
   const errors = [...(await checkCoverage(join(SRC, 'index.html'), join(ROOT, 'assets/fonts/manifest.json'))), ...sizes.errors];
   if (errors.length) throw new Error(errors.join('\n'));
-  return { html: sizes.html, total: sizes.total };
+  return { html: sizes.html, total: sizes.total, sw: { version: sw.version, precache: sw.precache, enabled: sw.enabled } };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

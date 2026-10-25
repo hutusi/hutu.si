@@ -3,7 +3,7 @@
 # The zone's Web Analytics (RUM) adds its beacon to HTML at the edge: it loads from
 # static.cloudflareinsights.com and reports to /cdn-cgi/rum here (or cloudflareinsights.com).
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' {{script-hashes}} https://static.cloudflareinsights.com; style-src {{style-hashes}}; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' {{script-hashes}} https://static.cloudflareinsights.com; style-src {{style-hashes}}; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=63072000; includeSubDomains
@@ -11,6 +11,10 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Browsers re-check the service worker on every visit; never let a cache answer for it.
+/sw.js
+  Cache-Control: no-cache
 
 # Plain-text files are UTF-8 (llms.txt and the Huiwen licence are partly Chinese). Without a
 # charset, clients fall back to Latin-1 or the reader's locale and garble them.

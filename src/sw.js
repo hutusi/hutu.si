@@ -1,0 +1,68 @@
+// The service worker: keeps a copy of the card (the page and its fingerprinted assets) so return
+// visits show it at once, even offline or on a slow network. A deploy that changes the card
+// changes this file (VERSION and PRECACHE are written by the build), browsers notice on the next
+// visit, install the new copy in the background, and the visit after that shows it.
+// Registered by boot.js only once the page has loaded and gone idle. See docs/decisions.md §18.
+
+// The kill switch. Set to false and deploy: on their next visit every browser fetches this file
+// afresh (no cache stands in its way), deletes the cached card, unregisters this worker and
+// reloads the page from the network. boot.js then stops registering it. docs/operations.md.
+const ENABLED = true;
+
+const VERSION = '{{version}}';
+const PRECACHE = ['{{precache}}']; // "/" and every file under /assets/
+const CACHE = `hutusi-${VERSION}`;
+const ours = (key) => key.startsWith('hutusi-');
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    (async () => {
+      if (ENABLED) {
+        // All or nothing: one failed fetch fails the install, so a half copy is never used. The
+        // page is revalidated; the assets never change, so the HTTP cache may supply them.
+        const cache = await caches.open(CACHE);
+        await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: url === '/' ? 'no-cache' : 'default' })));
+      }
+      await self.skipWaiting();
+    })(),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      const keys = (await caches.keys()).filter(ours);
+      if (!ENABLED) {
+        await Promise.all(keys.map((key) => caches.delete(key)));
+        await self.clients.claim();
+        await self.registration.unregister();
+        for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url).catch(() => {});
+        return;
+      }
+      // Keep this version and the one before it: a page still open on the old version can then
+      // still load its lazy assets (the QR code) after a deploy.
+      const older = keys.filter((key) => key !== CACHE);
+      await Promise.all(older.slice(0, -1).map((key) => caches.delete(key)));
+      await self.clients.claim();
+    })(),
+  );
+});
+
+// Only the card is served from the cache: navigations to "/" (whatever the query, e.g. ?seed=)
+// and the precached assets. Everything else, including the short-link paths /a /w /t,
+// /cdn-cgi/ (analytics), other origins and anything but GET, is left to the network untouched.
+self.addEventListener('fetch', (event) => {
+  if (!ENABLED) return;
+  const { request } = event;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  const page = url.pathname === '/';
+  if (!page && !PRECACHE.includes(url.pathname)) return;
+  event.respondWith(
+    (async () => {
+      const key = page ? '/' : request;
+      const own = await (await caches.open(CACHE)).match(key);
+      return own ?? (await caches.match(key)) ?? fetch(request); // the previous version's copy, then the network
+    })(),
+  );
+});
