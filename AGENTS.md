@@ -48,6 +48,9 @@ After changing any text on the card: `npm run fonts`, `npm run align`, `npm run 
    keep `run_worker_first` minimal. Worker responses need their own headers, including the CSP.
 10. **The scene's loop sleeps when idle.** Anything new that moves must report itself in
     `busy()`. Anything random goes through the seeded RNG.
+11. **Identity data stays consistent.** A profile link lives in four places: both faces, the
+    JSON-LD `sameAs`, and `static/llms.txt`. The bio lives in two: the JSON-LD and `llms.txt`.
+    Change them together; `test/unit/identity.test.js` checks.
 
 ## Workflow
 

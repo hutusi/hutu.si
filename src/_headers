@@ -11,3 +11,12 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Plain-text files are UTF-8 (llms.txt and the Huiwen licence are partly Chinese). Without a
+# charset, clients fall back to Latin-1 or the reader's locale and garble them.
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+/licenses/*
+  Content-Type: text/plain; charset=utf-8

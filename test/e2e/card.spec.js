@@ -131,3 +131,18 @@ test.describe('repeat visit', () => {
     await expect(page.locator('#card')).toHaveCSS('animation-name', 'none');
   });
 });
+
+test('without JavaScript, both sides are readable, each in its own language', async ({ browser, baseURL, browserName }) => {
+  test.skip(browserName === 'firefox', 'Playwright cannot inspect a Firefox page with JavaScript turned off');
+  // What a crawler or agent that doesn't run scripts gets.
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  const page = await context.newPage();
+  await page.goto('/');
+  await expect(page.locator('section[lang="zh-Hans"] h1')).toHaveText('胡智勇');
+  await expect(page.locator('section[lang="en"] h1')).toHaveText('John Hu');
+  for (const lang of ['zh-Hans', 'en']) {
+    await expect(page.locator(`section[lang="${lang}"] a[rel~="me"]`)).toHaveCount(6);
+    await expect(page.locator(`section[lang="${lang}"]`)).not.toHaveAttribute('inert');
+  }
+  await context.close();
+});

@@ -1,6 +1,6 @@
 // Derives the site's raster images from the originals in sources/ (run locally; outputs are
-// committed). Card images go to assets/img/ (fingerprinted by the build); icons go to static/
-// (served at fixed URLs).
+// committed). Card images go to assets/img/ (fingerprinted by the build); icons and the
+// profile logo go to static/ (served at fixed URLs).
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -50,6 +50,10 @@ sizes.forEach((size, i) => {
   offset += pngs[i].length;
 });
 await writeFile(out('static/favicon.ico'), Buffer.concat([header, ...pngs]));
+
+// The logo for structured data and profiles (the JSON-LD image): a stable, unfingerprinted URL at
+// the source's full 256 px, as a JPEG, which every crawler reads.
+await sharp(out('sources/logo.jpg')).jpeg({ quality: 86, mozjpeg: true }).toFile(out('static/logo.jpg'));
 
 // Home-screen icon: square and opaque (iOS rounds the corners itself).
 await sharp(out('sources/logo.jpg')).resize(180, 180, { kernel: 'lanczos3' }).png({ compressionLevel: 9, palette: true, effort: 10 }).toFile(out('static/apple-touch-icon.png'));

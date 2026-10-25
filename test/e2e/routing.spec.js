@@ -53,3 +53,19 @@ test('fingerprinted assets are cached for good, other files revalidate', async (
     expect(res.headers()['cache-control'] ?? '', path).not.toMatch(/immutable/);
   }
 });
+
+test('text files are UTF-8, and the files crawlers and agents look for are served', async ({ request }) => {
+  for (const path of ['/llms.txt', '/robots.txt', '/licenses/HuiwenMincho.txt']) {
+    const res = await request.get(path);
+    expect(res.status(), path).toBe(200);
+    expect(res.headers()['content-type'], path).toBe('text/plain; charset=utf-8');
+  }
+  expect(await (await request.get('/llms.txt')).text()).toContain('# 胡智勇 John Hu (hutusi)');
+  expect(await (await request.get('/robots.txt')).text()).toContain('Sitemap: https://hutu.si/sitemap.xml');
+  const sitemap = await request.get('/sitemap.xml');
+  expect(sitemap.status()).toBe(200);
+  expect(sitemap.headers()['content-type']).toMatch(/xml/);
+  const logo = await request.get('/logo.jpg');
+  expect(logo.status()).toBe(200);
+  expect(logo.headers()['content-type']).toBe('image/jpeg');
+});

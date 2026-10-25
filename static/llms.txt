@@ -1,0 +1,27 @@
+# 胡智勇 John Hu (hutusi)
+
+> 胡智勇（John Hu，网名 hutusi）的个人主页：一张中英双语名片。John Hu's homepage: a bilingual calling card.
+
+## 中文
+
+胡智勇（John Hu，网名 hutusi），开发者、写作者。在博客「胡涂说」记录技术与思考，编辑《好奇心周刊》，并用 AI 打造一系列小而美的软件作品（ainaive.com）。
+
+- [博客「胡涂说」](https://hutusi.com)
+- [好奇心周刊](https://hutusi.substack.com/)
+- [作品 ainaive.com](https://ainaive.com)
+- [GitHub](https://github.com/hutusi)
+- [X](https://x.com/hutusi)
+- 微信公众号：胡涂说（微信搜 hututalk）
+- 邮箱：[me@hutu.si](mailto:me@hutu.si)
+
+## English
+
+John Hu (胡智勇, known online as hutusi) is a developer and writer. He writes the blog 胡涂说 at hutusi.com, edits the Curiosity Weekly newsletter, and builds small, AI-powered software, collected at ainaive.com.
+
+- [Blog: 胡涂说](https://hutusi.com)
+- [Newsletter: Curiosity Weekly (好奇心周刊)](https://hutusi.substack.com/)
+- [Projects: ainaive.com](https://ainaive.com)
+- [GitHub](https://github.com/hutusi)
+- [X](https://x.com/hutusi)
+- WeChat official account: 胡涂说 (search for hututalk in WeChat)
+- Email: [me@hutu.si](mailto:me@hutu.si)
