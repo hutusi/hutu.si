@@ -47,14 +47,29 @@
     if (e.key === 'Escape') for (const wx of popups) show(wx, false);
   });
 
-  // The branch and magpie are an enhancement: load them only after the card is on screen.
-  const scene = () =>
-    requestAnimationFrame(() => {
-      const s = document.createElement('script');
-      s.type = 'module';
-      s.src = 'asset:scene.js';
-      document.head.append(s);
-    });
-  if (document.readyState === 'complete') scene();
-  else addEventListener('load', scene);
+  // The branch and magpie are an enhancement: load them only after the card is on screen, once
+  // its fonts have arrived or the page has loaded, whichever is first. (Not just on load: the
+  // analytics beacon Cloudflare adds to the page holds the load event back.)
+  let started;
+  const scene = () => {
+    if (started) return;
+    started = true;
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'asset:scene.js';
+    document.head.append(s);
+  };
+  // Wait for the card's first paint (a fast load can finish before it); by then the card has
+  // requested its fonts, so `ready` waits for them. Without paint timing, wait two frames.
+  const painted = (go) =>
+    PerformanceObserver.supportedEntryTypes?.includes('paint')
+      ? new PerformanceObserver((list, observer) => {
+          if (list.getEntriesByName('first-contentful-paint').length) observer.disconnect(), go();
+        }).observe({ type: 'paint', buffered: true })
+      : requestAnimationFrame(() => requestAnimationFrame(go));
+  painted(() => {
+    document.fonts.ready.then(scene);
+    if (document.readyState === 'complete') scene();
+    else addEventListener('load', scene);
+  });
 })();
