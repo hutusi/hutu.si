@@ -3,6 +3,10 @@
 import { connect } from 'node:tls';
 import { expect, test } from '@playwright/test';
 
+// The full value of one CSP directive, and the HSTS lifetime in seconds.
+const directive = (csp, name) => csp.match(new RegExp(`(?:^|;)\\s*${name}\\s+([^;]*)`))?.[1].trim();
+const hstsMaxAge = (hsts) => Number(hsts?.match(/max-age=(\d+)/)?.[1] ?? 0);
+
 const ORIGINS = ['https://static.cloudflareinsights.com']; // the analytics beacon the edge adds
 
 test('the card loads cleanly: no errors, no CSP violations, no unexpected origins', async ({ page, baseURL }) => {
@@ -25,9 +29,11 @@ test('the card loads cleanly: no errors, no CSP violations, no unexpected origin
 
 test('security headers are in place', async ({ request }) => {
   const h = (await request.get('/')).headers();
-  expect(h['content-security-policy']).toMatch(/default-src 'none'/);
-  expect(h['content-security-policy']).toContain('https://static.cloudflareinsights.com');
-  expect(h['strict-transport-security']).toMatch(/max-age=\d+/);
+  const csp = h['content-security-policy'];
+  expect(directive(csp, 'default-src'), 'default-src is exactly none').toBe("'none'");
+  expect(directive(csp, 'script-src')).toContain('https://static.cloudflareinsights.com');
+  expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/);
+  expect(hstsMaxAge(h['strict-transport-security']), 'HSTS for at least a year').toBeGreaterThanOrEqual(31_536_000);
   expect(h['x-content-type-options']).toBe('nosniff');
 });
 
