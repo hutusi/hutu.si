@@ -143,10 +143,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   text-shadow: 0 1px 0 rgba(255, 228, 214, .16), 0 -1px 0 rgba(60, 10, 0, .38);
 }
 .deboss-cjk span { position: relative; top: .04em; }
+/* Until the logo arrives, a soft disc in its tones holds its place; the logo fades in over it. */
 .seal {
   position: absolute; left: 44px; top: 44px; width: 52px; height: 52px; border-radius: 50%;
+  background: radial-gradient(circle, #6e6a62, #59534b 55%, #413933);
   box-shadow: 0 0 0 .5px rgba(50, 30, 15, .32), 0 1px 1.5px rgba(50, 30, 15, .18);
 }
+.seal img { display: block; width: 100%; height: 100%; border-radius: 50%; transition: opacity .4s ease; }
+.seal.wait img { opacity: 0; transition: none; }
 .front .seal { transform: rotate(-4deg); opacity: .94; animation: stamp .28s cubic-bezier(.55, 0, .8, .2) 1.85s both; }
 
 /* ---- Card text ---- */
@@ -197,18 +201,29 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .front .social a:hover, .front .wx button:hover { color: var(--cinnabar); }
 .back .social a:hover, .back .wx button:hover { color: #fff; }
 
-/* WeChat QR popup: hover on pointer devices, click/tap/keyboard everywhere (boot.js). */
-.wx { position: relative; display: flex; }
+/* WeChat QR popup: hover on pointer devices, click/tap/keyboard everywhere (boot.js). The
+   wrapper is the icon box and the button fills it: an empty button's baseline is its bottom in
+   Chrome but its middle in WebKit, which would drop the icon below the others. (Border-box,
+   as the button was, keeps the row's spacing.) */
+.wx { box-sizing: border-box; }
+.wx button { position: absolute; inset: 0; }
 .pop {
-  position: absolute; left: 50%; bottom: 40px; z-index: 1; width: 148px; box-sizing: border-box; padding: 12px 12px 10px;
+  position: absolute; left: 50%; bottom: 33px; z-index: 1; width: 148px; box-sizing: border-box; padding: 12px 12px 10px;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  border-radius: 4px; background: #fffdf8; color: var(--ink); text-shadow: none;
+  border-radius: 4px; background: #faf5ea; color: var(--ink); text-shadow: none;
   font-size: 12px; line-height: 1.2; text-align: center;
-  box-shadow: 0 1px 2px rgba(40, 30, 20, .12), 0 14px 30px -10px rgba(40, 30, 20, .35);
+  box-shadow: 0 0 0 .5px rgba(90, 64, 34, .22), 0 1px 2px rgba(40, 30, 20, .12), 0 14px 30px -10px rgba(40, 30, 20, .35);
   pointer-events: none; opacity: 0; transform: translate(-50%, 6px); visibility: hidden;
   transition: opacity .2s ease, transform .25s cubic-bezier(.2, .8, .2, 1), visibility 0s .25s;
 }
-.pop img { display: block; width: 124px; height: 124px; }
+/* A small pointer down to the icon: a square turned 45°, half of it under the sheet. */
+.pop::after {
+  content: ""; position: absolute; left: 50%; bottom: 0; width: 9px; height: 9px;
+  background: inherit; transform: translate(-50%, 50%) rotate(45deg);
+  box-shadow: .5px .5px 0 rgba(90, 64, 34, .22), 2px 2px 3px -1px rgba(40, 30, 20, .2);
+}
+/* The QR stays on pure white (with its own quiet zone) for reliable scanning. */
+.pop img { display: block; width: 124px; height: 124px; background: #fff; box-shadow: 0 0 0 .5px rgba(90, 64, 34, .16); }
 .pop .sub { font-size: 11px; color: #6d6157; }
 .wx.open .pop { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition-delay: 0s; }
 @media (hover: hover) {
@@ -247,7 +262,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .social { align-self: center; justify-self: auto; margin: 0 0 0 -17px; gap: 0; font-size: 15px; }
   .ic { top: calc(22px - .2em); height: 44px; padding: 0 17px; }
   .mail { margin-left: 0; padding-left: 17px; line-height: 44px; }
-  .pop { bottom: 46px; }
+  .pop { bottom: 41px; }
   .seal { width: 46px; height: 46px; top: var(--seal-t); }
   .front .seal { left: auto; right: 36px; }
   .back .seal { left: 36px; }
