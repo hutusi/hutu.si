@@ -11,12 +11,14 @@ test.use({
   allow: /Refused to apply a stylesheet because its hash|CSP violation: style-src-elem inline/,
 });
 
-for (const [locale, face] of [['zh-CN', '#front'], ['en-US', '#back']]) {
+for (const [locale, face, far] of [['zh-CN', '#front', '#back'], ['en-US', '#back', '#front']]) {
   test.describe(locale, () => {
     test.use({ locale });
 
-    test('screenshot for review', async ({ page }, testInfo) => {
+    test('screenshot for review', async ({ page, browserName }, testInfo) => {
       await open(page);
+      // Headless WebKit ignores backface-visibility and would paint the far side over this one.
+      if (browserName === 'webkit') await page.locator(far).evaluate((el) => (el.style.visibility = 'hidden'));
       await page.locator(`${face} .wx button`).click();
       await page.mouse.move(1, 1);
       await page.locator(`${face} .pop`).waitFor({ state: 'visible' });
