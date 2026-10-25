@@ -223,8 +223,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .turn:focus-visible { clip-path: none; opacity: 1; }
 
+/* In the stage's corner, as designed, unless the viewport crops it (see --cut-* in head.js). */
 .again {
-  position: absolute; right: 36px; bottom: 28px; height: 44px; padding: 0 4px;
+  position: absolute; right: max(36px, calc(var(--cut-r, 0px) + 16px)); bottom: max(28px, calc(var(--cut-b, 0px) + 12px));
+  height: 44px; padding: 0 4px;
   font-size: 15px; line-height: 44px; color: rgba(47, 40, 35, .68); /* the design's .55 is below 4.5:1 */
   text-decoration: underline 1px transparent; text-underline-offset: 4px;
   transition: text-decoration-color .2s ease, color .2s ease;

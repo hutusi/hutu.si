@@ -14,10 +14,11 @@
   } catch {}
 
   // Per composition: stage size, the region we try to show whole ([x0, y0, x1, y1]) and the
-  // region that must stay visible when the viewport is too small to show it all readably.
+  // region that must stay visible when the viewport is too small to show it all readably: the
+  // card, plus room under it for "Watch again".
   const tallQuery = matchMedia('(max-aspect-ratio: 9/10)');
   const COMPOSITIONS = {
-    wide: { w: 1280, h: 800, frame: [0, 0, 1280, 800], core: [290, 156, 990, 568] },
+    wide: { w: 1280, h: 800, frame: [0, 0, 1280, 800], core: [290, 156, 990, 612] },
     tall: { w: 390, h: 844, frame: [0, 0, 390, 810], core: [0, 222, 390, 810] },
   };
   const MAX_SCALE = 1.5;
@@ -33,13 +34,17 @@
     s = Math.round(s * 1000) / 1000;
     // Centre the frame horizontally; vertically show its top first. Then pull the core into view.
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const ox = clamp((vw - (f[0] + f[2]) * s) / 2, -c[0] * s, vw - c[2] * s);
+    const ox = Math.round(clamp((vw - (f[0] + f[2]) * s) / 2, -c[0] * s, vw - c[2] * s));
     const fitsV = (f[3] - f[1]) * s <= vh;
-    const oy = clamp(fitsV ? (vh - (f[1] + f[3]) * s) / 2 : -f[1] * s, -c[1] * s, vh - c[3] * s);
+    const oy = Math.round(clamp(fitsV ? (vh - (f[1] + f[3]) * s) / 2 : -f[1] * s, -c[1] * s, vh - c[3] * s));
     root.style.setProperty('--s', s);
-    root.style.setProperty('--ox', `${Math.round(ox)}px`);
-    root.style.setProperty('--oy', `${Math.round(oy)}px`);
-    window.hutuStage = { tall, w, h, s, ox: Math.round(ox), oy: Math.round(oy), vw, vh };
+    root.style.setProperty('--ox', `${ox}px`);
+    root.style.setProperty('--oy', `${oy}px`);
+    // How far the viewport cuts into the stage's right and bottom edges, in stage px, so that
+    // "Watch again" can move in from the corner and stay on screen.
+    root.style.setProperty('--cut-r', `${Math.round(w - (vw - ox) / s)}px`);
+    root.style.setProperty('--cut-b', `${Math.round(h - (vh - oy) / s)}px`);
+    window.hutuStage = { tall, w, h, s, ox, oy, vw, vh };
     dispatchEvent(new Event('stage'));
   };
   fit();
