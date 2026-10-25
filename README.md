@@ -5,37 +5,21 @@ keyboard to flip it) over an ink plum branch that grows behind it. A magpie flie
 petals fall when it lands or flutters, or when you brush a blossom. Every visit grows a
 different branch (`?seed=N` reproduces one).
 
-No framework and no runtime dependencies. Visitors load one HTML file, five small font
-subsets, two images and one deferred script, all from hutu.si, plus the Cloudflare Web
-Analytics beacon that the edge adds to the page.
+No framework and no runtime dependencies. Visitors load one HTML file, five small font subsets,
+two images and one deferred script, all from hutu.si, plus the Cloudflare Web Analytics beacon
+that the edge adds to the page. The card arrives in the first network round trip (about 9 KB
+compressed, against a 14 KB budget); the scene loads after the card has painted and its fonts
+have arrived. A first visit is about 82 KB compressed, plus the 10 KB beacon.
 
-## How it loads
+## Quick start
 
-- **The card is the HTML.** `index.html` inlines everything the card needs: critical CSS, font
-  declarations, a 0.4 KB head script and a 1 KB boot script. That is about 9 KB gzip, so it
-  arrives in the first round trip. `npm run build` fails above 14 KB.
-- **Text never waits.** Text shows at once in a local serif. Fonts are preloaded and swap in
-  with `font-display: swap`. Fallback faces are metric-matched, and the card's geometry is fixed,
-  so nothing moves when they arrive.
-- **The scene comes last.** The branch, magpie and petals load as a module after the page has
-  painted. The loop sleeps whenever nothing moves and stops while the tab is hidden. With reduced
-  motion it draws the finished scene and holds still.
-- **Budget.** A first visit is about 82 KB compressed, plus the 10 KB analytics beacon. `npm run build` fails above 150 KB.
+Requires Node 24 (see `.node-version`). The local tools (`align`, `og`, `measure`) drive the
+installed Google Chrome.
 
-## Layout
-
-```
-src/index.html         the page: both faces of the card, one DOM for both layouts
-src/critical.css       inlined styles; "wide" (1280×800) and "tall" (390×844) compositions
-src/head.js, boot.js   inlined scripts: side, scale and intro; flipping, WeChat popup, scene loader
-src/fonts.css          generated @font-face rules           (npm run fonts)
-src/align.css          generated optical alignments         (npm run align)
-src/scene/             the deferred scene: branch, flowers, petals, magpie, paper
-src/worker.js          Worker code, only for the reserved /a /w /t paths
-assets/                fingerprinted at build: font subsets, card images
-static/                copied as-is: favicon, touch icon, og.jpg, robots.txt, licences
-sources/               original logo and WeChat QR images
-scripts/               build and tooling
+```sh
+npm ci
+npx playwright install chromium webkit firefox   # browsers for the tests, once
+npm run dev                                      # http://localhost:8787, rebuilds on change
 ```
 
 ## Commands
@@ -43,15 +27,69 @@ scripts/               build and tooling
 | | |
 |---|---|
 | `npm run dev` | build, watch, and serve with `wrangler dev` on :8787 (same routing as production) |
-| `npm run build` | build `dist/`; checks font coverage and size budgets |
-| `npm run fonts` | download the pinned font sources, subset them to the page's characters, regenerate `src/fonts.css` |
+| `npm run build` | build `dist/`; fails over the size budgets or on a character missing from the fonts |
+| `npm run verify` | build, then every test. **Run it before anything lands on `main`.** |
+| `npm test` | unit tests, then the browser tests |
+| `npm run test:unit` | unit tests only (about 2 s, no browser) |
+| `npm run test:e2e` | browser tests: Chromium, WebKit and Firefox, at desktop and phone sizes |
+| `npm run test:smoke` | check the live site: headers, redirects, DNSSEC, certificate, console |
+| `npm run fonts` | download the pinned font sources, subset them to the card's characters, regenerate `src/fonts.css` |
 | `npm run align` | measure the optical alignments with the real fonts, regenerate `src/align.css` |
-| `npm run images` | regenerate the logo, QR and icons from `sources/` |
-| `npm run og` | render `static/og.jpg` (`npm run og -- 3 7 12` renders seeds to compare) |
+| `npm run images` | regenerate the logo, QR code and icons from `sources/` |
+| `npm run og` | render the social preview `static/og.jpg` (`npm run og -- 3 7 12` renders seeds to compare) |
 | `npm run measure -- <url>` | cold-load timings under three network profiles, and real compressed sizes |
 
-After changing card text, run `npm run fonts` and `npm run align`. The build fails if a
-character is missing from the subsets. Node 24; the local tools use the installed Google Chrome.
+## Changing the card
+
+The card's text lives in `src/index.html` (both faces, plus the metadata and JSON-LD in the
+head). After changing any of it:
+
+1. `npm run fonts`. The fonts are subset to exactly the characters on the card, so new
+   characters need new subsets; the build fails if one is missing.
+2. `npm run align`. This re-measures the optical alignments with the real fonts: the debossed
+   wordmark, the seal, the label column, and the vertical text on phones.
+3. `npm run og`, which re-renders the social preview of the front of the card.
+4. `npm run verify`, then look at the card in a browser at a desktop and a phone size.
+
+Commit the regenerated files (`assets/fonts/`, `src/fonts.css`, `src/align.css`,
+`static/og.jpg`) with the change. Links, the QR code and the logo are covered in
+[docs/operations.md](docs/operations.md#updating-the-content).
+
+## Layout
+
+```
+src/index.html         the page: both faces of the card, one DOM for both layouts
+src/critical.css       inlined styles; "wide" (1280×800) and "tall" (390×844) compositions
+src/head.js, src/boot.js  inlined scripts: side, scale and intro; flipping, popup, logo, scene loader
+src/fonts.css          generated @font-face rules                   (npm run fonts)
+src/align.css          generated optical alignments                 (npm run align)
+src/scene/             the deferred scene: branch, flowers, petals, magpie, paper
+src/worker.js          Worker code, only for the reserved /a /w /t paths
+src/_headers           security headers and caching; CSP hashes filled in by the build
+assets/                fingerprinted at build: font subsets, card images
+static/                copied as-is: favicon, touch icon, og.jpg, robots.txt, licences
+sources/               original logo and WeChat QR images
+scripts/               build and tooling
+test/                  unit (node:test), e2e and smoke (Playwright) tests
+docs/                  architecture, decisions, operations, testing
+```
+
+## Deploying
+
+Pushes to `main` deploy to hutu.si through Cloudflare Workers Builds, which runs the build and
+the unit tests first. Pull requests get a preview URL, and GitHub Actions runs the browser tests
+on every pull request and push. See [docs/operations.md](docs/operations.md) for rollback and
+for the Cloudflare settings that must stay as they are.
+
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md): how the page is built, loaded and served.
+- [docs/decisions.md](docs/decisions.md): the key decisions and what they ask of future
+  changes. Read it before changing how the page loads.
+- [docs/operations.md](docs/operations.md): deploying, rolling back, Cloudflare settings,
+  updating content, troubleshooting.
+- [docs/testing.md](docs/testing.md): what the tests cover, and how to run and extend them.
+- [AGENTS.md](AGENTS.md): the short version, for AI coding agents.
 
 ## Fonts
 
@@ -65,22 +103,9 @@ character is missing from the subsets. Node 24; the local tools use the installe
 Only the subsets are committed. They keep each font's copyright and licence strings, and the
 licence texts are served under `/licenses/`.
 
-## Deploy
+## Licence
 
-A Cloudflare Worker with static assets (`wrangler.jsonc`), deployed by Workers Builds on every
-push to `main`: build command `npm run build`, deploy command `npx wrangler deploy`. Pushes to
-other branches get a preview deployment (`npx wrangler preview`) linked from the PR checks.
-
-- Static files and the 404 page are served by the asset layer without running Worker code.
-  Only `/a`, `/w` and `/t` (reserved for short links) reach `src/worker.js`, which returns 404
-  for now.
-- `_headers` sets immutable caching for `/assets/*` and a CSP that allows the page's own
-  inline code by hash, plus the Web Analytics beacon (`static.cloudflareinsights.com`, reporting
-  to `/cdn-cgi/rum`).
-- Web Analytics (Speed → Real user monitoring) is on: the edge adds its beacon, a deferred
-  module of about 10 KB, to each HTML response.
-- Keep these zone features **off**: they rewrite the HTML (breaking the CSP hashes) or add
-  third-party requests. Email Obfuscation, Rocket Loader, Automatic HTTPS Rewrites, Zaraz.
-- Keep **Always Use HTTPS** on (SSL/TLS → Edge Certificates); the Worker doesn't redirect.
+The code is MIT-licensed ([LICENSE](LICENSE)). The card's content, the design, the logo and
+portrait, the QR code and the fonts are not covered by it; see the licence for details.
 
 The design is in Claude Design ("John Hu's Personal Homepage Directions", options 4a and 5a).
