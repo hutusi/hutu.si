@@ -15,7 +15,8 @@
     "test:unit": "node --test test/unit/",
     "test:e2e": "playwright test",
     "test": "npm run test:unit && npm run test:e2e",
-    "verify": "npm run build && npm test"
+    "verify": "npm run build && npm test",
+    "test:smoke": "playwright test --config test/smoke/playwright.config.js"
   },
   "devDependencies": {
     "@capsizecss/core": "4.1.3",
