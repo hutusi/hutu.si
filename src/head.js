@@ -12,6 +12,9 @@
     if (sessionStorage.getItem('hutusi:seen')) root.classList.add('seen');
     sessionStorage.setItem('hutusi:seen', '1');
   } catch {}
+  // Firefox only uses a local() fallback face once something has loaded it; until then it sets
+  // the text in its default serif, which then jumps when the web fonts arrive. Load them now.
+  document.fonts.forEach((f) => /Fallback/.test(f.family) && f.load().catch(() => {}));
 
   // Per composition: stage size, the region we try to show whole ([x0, y0, x1, y1]) and the
   // region that must stay visible when the viewport is too small to show it all readably: the
