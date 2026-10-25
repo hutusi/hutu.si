@@ -2,6 +2,7 @@
 // swap in. The fallbacks are local fonts (Times New Roman, Songti SC, or Noto on other systems);
 // where none is installed the comparison would be meaningless, so the test skips.
 import { expect, test } from './fixtures.js';
+import { hold } from './helpers.js';
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -29,10 +30,7 @@ for (const [locale, face] of [['zh-CN', '#front'], ['en-US', '#back']]) {
         browserName === 'firefox' && vertical,
         'Known limitation: Firefox places vertical CJK text by the font\'s own vertical metrics, which @font-face overrides do not reach, so the vertical Chinese text shifts ~5 px as the font swaps (docs/decisions.md)',
       );
-      await page.route('**/*.woff2', async (route) => {
-        await new Promise((ok) => setTimeout(ok, 1000));
-        await route.continue();
-      });
+      const releaseFonts = await hold(page, '**/*.woff2');
       await page.addInitScript(() => {
         window.__cls = 0;
         try {
@@ -51,6 +49,7 @@ for (const [locale, face] of [['zh-CN', '#front'], ['en-US', '#back']]) {
 
       expect(await page.evaluate(() => document.fonts.status), 'measured before the web fonts arrived').toBe('loading');
       const before = await starts(page, face);
+      releaseFonts();
       await page.evaluate(() => document.fonts.ready);
       await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
       const after = await starts(page, face);

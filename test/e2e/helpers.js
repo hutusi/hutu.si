@@ -38,3 +38,15 @@ export const countFrames = () => {
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (f) => raf((t) => (window.__frames++, f(t)));
 };
+
+// Holds matching requests until `release()` is called, so a test can look at the page before
+// they arrive however slow the machine is (a fixed delay can run out before the first paint).
+export async function hold(page, pattern) {
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  await page.route(pattern, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  return release;
+}

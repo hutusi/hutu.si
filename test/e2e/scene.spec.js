@@ -1,7 +1,7 @@
 // The ink plum scene behind the card: when it starts, that it is seeded, and that it stops
 // drawing when nothing moves, with reduced motion, and in a hidden tab.
 import { expect, test } from './fixtures.js';
-import { canvasHash, countFrames, open } from './helpers.js';
+import { canvasHash, countFrames, hold, open } from './helpers.js';
 
 test.use({ locale: 'zh-CN' });
 
@@ -9,10 +9,7 @@ const frames = (page) => page.evaluate(() => window.__frames);
 const settle = (page, ms) => page.waitForTimeout(ms); // a pause to count frames over, not an assertion
 
 test('starts only after the card has painted and its fonts have arrived', async ({ page }) => {
-  await page.route('**/*.woff2', async (route) => {
-    await new Promise((ok) => setTimeout(ok, 800));
-    await route.continue();
-  });
+  const releaseFonts = await hold(page, '**/*.woff2');
   // Note the state of the page at the moment the scene's script is added.
   await page.addInitScript(() => {
     new MutationObserver((records, observer) => {
@@ -24,7 +21,11 @@ test('starts only after the card has painted and its fonts have arrived', async 
       }
     }).observe(document, { childList: true, subtree: true });
   });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'commit' });
+  await page.waitForFunction(() => performance.getEntriesByName('first-contentful-paint').length > 0);
+  await settle(page, 1000); // time for a premature start to show itself
+  expect(await page.evaluate(() => window.__atScene), 'no scene while the fonts are still loading').toBeUndefined();
+  releaseFonts();
   await page.waitForFunction(() => performance.getEntriesByName('scene-start').length > 0);
   expect(await page.evaluate(() => window.__atScene)).toEqual({ painted: true, fonts: 'loaded' });
   await expect(page.locator('canvas.layer')).toHaveCount(5);

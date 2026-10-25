@@ -1,5 +1,6 @@
 // The logo seal: fetched first, held by a placeholder disc in its own tones, faded in on load.
 import { expect, test } from './fixtures.js';
+import { hold } from './helpers.js';
 
 test.use({ locale: 'en-US', contextOptions: { reducedMotion: 'reduce' } }); // the back face's seal has no intro
 
@@ -16,16 +17,14 @@ test('the logo is requested first, at high priority, matching the image', async 
 });
 
 test('a slow logo shows the placeholder disc, then fades in', async ({ page }) => {
-  await page.route(/logo-\d+/, async (route) => {
-    await new Promise((ok) => setTimeout(ok, 1500));
-    await route.continue();
-  });
+  const releaseLogo = await hold(page, /logo-\d+/);
   await page.goto('/', { waitUntil: 'commit' });
   await page.waitForFunction(() => performance.getEntriesByName('first-contentful-paint').length > 0);
   await expect(seal(page)).toHaveClass(/\bwait\b/);
   await expect(img(page)).toHaveCSS('opacity', '0');
   await expect(seal(page)).toHaveCSS('background-image', /radial-gradient/);
-  await expect(seal(page)).not.toHaveClass(/\bwait\b/, { timeout: 5000 });
+  releaseLogo();
+  await expect(seal(page)).not.toHaveClass(/\bwait\b/);
   await expect(img(page)).toHaveCSS('opacity', '1');
 });
 
