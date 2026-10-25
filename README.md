@@ -67,7 +67,8 @@ licence texts are served under `/licenses/`.
 ## Deploy
 
 A Cloudflare Worker with static assets (`wrangler.jsonc`), deployed by Workers Builds on every
-push to `main`: build command `npm run build`, deploy command `npx wrangler deploy`.
+push to `main`: build command `npm run build`, deploy command `npx wrangler deploy`. Pushes to
+other branches get a preview deployment (`npx wrangler preview`) linked from the PR checks.
 
 - Static files and the 404 page are served by the asset layer without running Worker code.
   Only `/a`, `/w` and `/t` (reserved for short links) reach `src/worker.js`, which returns 404

@@ -15,5 +15,8 @@
     // misses (which get dist/404.html), is answered by the asset layer without invoking it.
     "run_worker_first": ["/a", "/a/*", "/w", "/w/*", "/t", "/t/*"]
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Builds of other branches run `wrangler preview`, which needs this block. Empty: previews
+  // use the settings above.
+  "previews": {}
 }
