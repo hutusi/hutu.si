@@ -212,7 +212,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .pop .sub { font-size: 11px; color: #6d6157; }
 .wx.open .pop { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition-delay: 0s; }
 @media (hover: hover) {
-  .wx:hover .pop { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition-delay: 0s; }
+  .wx:hover:not(.shut) .pop { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition-delay: 0s; }
 }
 
 /* Keyboard-only flip control: invisible until focused. */

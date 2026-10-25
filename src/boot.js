@@ -31,11 +31,14 @@
   const popups = [...document.querySelectorAll('.wx')];
   const show = (wx, open) => {
     wx.classList.toggle('open', open);
+    // Closing it under the pointer also holds off the hover preview until the pointer leaves.
+    wx.classList.toggle('shut', !open && wx.matches(':hover'));
     wx.querySelector('button').setAttribute('aria-expanded', open);
   };
   for (const wx of popups) {
     wx.querySelector('button').addEventListener('click', () => show(wx, !wx.classList.contains('open')));
     wx.addEventListener('focusout', (e) => wx.contains(e.relatedTarget) || show(wx, false));
+    wx.addEventListener('pointerleave', () => wx.classList.remove('shut'));
   }
   document.addEventListener('pointerdown', (e) => {
     for (const wx of popups) if (!wx.contains(e.target)) show(wx, false);
