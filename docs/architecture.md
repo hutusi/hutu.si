@@ -35,7 +35,7 @@ visitor ── https://hutu.si ──▶ Cloudflare edge (zone hutu.si)
 
 ```
 <head>
-  meta, title, Open Graph and Twitter tags, JSON-LD (Person)
+  meta, title, Open Graph and X card tags, JSON-LD (ProfilePage + Person, both languages)
   <link rel=preload> the logo (fetchpriority=high), then the five font subsets
   <style>   fonts.css + critical.css + align.css, minified
   <script>  head.js
@@ -48,7 +48,11 @@ visitor ── https://hutu.si ──▶ Cloudflare edge (zone hutu.si)
   <script>  boot.js
 ```
 
-One DOM serves both compositions; CSS rearranges it for the tall one.
+One DOM serves both compositions; CSS rearranges it for the tall one. Both faces' text is in the
+HTML, each `<section>` with its own `lang`, so crawlers and agents that don't run JavaScript read
+the whole card. For them there are also `robots.txt`, `sitemap.xml`, `llms.txt` (a plain-text,
+bilingual introduction) and `logo.jpg`, all in `static/`; see
+[decisions.md](decisions.md#17-identity-for-search-engines-and-ai-agents).
 
 ## Loading order
 

@@ -181,6 +181,8 @@ build computes, plus same-origin files. The analytics beacon is allowed explicit
 - **On:** DNSSEC (DS algorithm 13), Always Use HTTPS, Web Analytics (real user monitoring).
 - **Off:** Email Obfuscation, Rocket Loader, Automatic HTTPS Rewrites and Zaraz, because they
   rewrite the HTML or add third-party requests.
+- **Off:** Browser Integrity Check; AI Crawl Control blocks no crawler (see
+  [17](#17-identity-for-search-engines-and-ai-agents)).
 
 **Why.** See [11](#11-a-strict-hash-based-csp). Always Use HTTPS matters because the Worker never
 redirects HTTP itself.
@@ -248,3 +250,36 @@ Each of these caused a real bug; each has a test.
 
 **Keep in mind.** Run `npm run verify` before landing on `main`. When fixing a bug, add the test
 that would have caught it. [testing.md](testing.md) maps each test to what it guards.
+
+## 17. Identity for search engines and AI agents
+
+**Decision.** One URL, https://hutu.si/, serves both languages, and tells machines who it
+belongs to:
+
+- **Structured data.** JSON-LD in Google's profile-page form: a ProfilePage whose main entity is
+  the Person 胡智勇, also known as John Hu and hutusi. It carries:
+  - the bio and the roles in both languages, each marked with `@language`;
+  - the logo (`/logo.jpg`) as the image;
+  - `sameAs` links to every profile.
+- **Profile links.** `rel="me"` on every profile link, on both faces.
+- **Social tags.** Complete Open Graph and X card tags; `og:locale` is `zh_CN`, with `en_US` as
+  alternate.
+- **Discovery files.**
+  - `robots.txt` allows every crawler and names `sitemap.xml`, which lists the one URL with no
+    `lastmod`.
+  - `llms.txt` is a plain-text, bilingual introduction with every link.
+- **No JavaScript needed.** Both faces' text is in the HTML, each `<section>` with its own `lang`.
+- **Reachability.**
+  - Text files are served as UTF-8.
+  - AI Crawl Control blocks no crawler, and Browser Integrity Check is off. It had refused simple
+    clients such as Python's urllib.
+
+**Why.** The goal is identity, not ranking. A search for the name, or an AI asked who hutusi is,
+should find an accurate, complete answer in either language that ties the profiles together.
+There's no `hreflang`: it describes separate URLs per language, which this site doesn't have.
+
+**Keep in mind.**
+- **Four places for each link.** A profile link lives on both faces, in the JSON-LD `sameAs` and
+  in `static/llms.txt`; the bio lives in the JSON-LD and `llms.txt`. Change them together; the
+  unit tests fail if they disagree.
+- **Card text stays in the HTML,** so crawlers and agents never see less than a visitor.

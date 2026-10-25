@@ -59,7 +59,9 @@ A test that provokes an error on purpose, such as a failed image, names what it 
 | logo: preloaded first, placeholder then fade, failure keeps the disc, works without JS | `e2e/logo.spec.js` |
 | scene starts after the card's paint and fonts; seeded; holds still with reduced motion; restarts when it's turned off; stops in a hidden tab; "Watch again" | `e2e/scene.spec.js` |
 | security headers, reserved paths, static 404, redirects, caching | `e2e/routing.spec.js` |
-| live site: clean load, headers, HTTPS redirect, DNSSEC, certificate | `smoke/production.spec.js` |
+| identity: bilingual ProfilePage, `rel="me"`, social tags, robots/sitemap, `llms.txt`, all links in agreement | `unit/identity.test.js` |
+| text files served as UTF-8; both sides readable without JavaScript | `e2e/routing.spec.js`, `e2e/card.spec.js` |
+| live site: clean load, headers, HTTPS redirect, identity metadata, scripts let in, DNSSEC, certificate | `smoke/production.spec.js` |
 
 `e2e/screenshots.spec.js` attaches screenshots of both sides, with the popup open, to the HTML
 report for each project. They are for a person to look over; nothing compares them pixel by

@@ -67,7 +67,7 @@ src/scene/             the deferred scene: branch, flowers, petals, magpie, pape
 src/worker.js          Worker code, only for the reserved /a /w /t paths
 src/_headers           security headers and caching; CSP hashes filled in by the build
 assets/                fingerprinted at build: font subsets, card images
-static/                copied as-is: favicon, touch icon, og.jpg, robots.txt, licences
+static/                copied as-is: icons, logo.jpg, og.jpg, robots.txt, sitemap.xml, llms.txt, licences
 sources/               original logo and WeChat QR images
 scripts/               build and tooling
 test/                  unit (node:test), e2e and smoke (Playwright) tests

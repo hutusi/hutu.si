@@ -57,6 +57,8 @@ check](#the-daily-production-check) notices most of them changing.
 | Rocket Loader | **off** | rewrites the scripts, which breaks the CSP hashes |
 | Automatic HTTPS Rewrites | **off** | rewrites the HTML |
 | Zaraz | **off** | adds third-party scripts |
+| AI Crawl Control | **nothing blocked** | search engines and AI agents should be able to read the card |
+| Browser Integrity Check (Security → Settings) | **off** | it refused simple clients such as Python's urllib; a static public card gains nothing from it |
 
 The bare domain has no A or AAAA record of its own: the Worker's custom domain manages it.
 
@@ -73,7 +75,8 @@ The bare domain has no A or AAAA record of its own: the Worker's custom domain m
 | To change | Do |
 |---|---|
 | Card text | edit `src/index.html`, then `npm run fonts`, `npm run align`, `npm run og`, `npm run verify` (see the [README](../README.md#changing-the-card)) |
-| A link | `src/index.html`, on both faces, and the JSON-LD `sameAs` list in the head |
+| A link | four places: both faces in `src/index.html`, the JSON-LD `sameAs` list in its head, and `static/llms.txt`; the unit tests fail if they disagree |
+| The bio | the JSON-LD `description` (in `src/index.html`) and `static/llms.txt`, in both languages; the tests require them to match |
 | The WeChat QR code | replace `sources/wechat-qr.jpg`, run `npm run images` |
 | The logo | replace `sources/logo.jpg`, run `npm run images` (logo, favicon, touch icon) and `npm run og`; update the placeholder's tones in `.seal` (`src/critical.css`) to the new logo's colours |
 | The social preview | `npm run og`, which uses seed 4; `npm run og -- 3 7 12` renders other seeds to compare, and `SEED` in `scripts/og.mjs` picks one |
@@ -105,9 +108,18 @@ also run it from the Actions tab. A failure emails the repository's owner.
 | HTTP not redirected | Always Use HTTPS turned off |
 | DNSSEC not validated | the DS record at the registrar no longer matches |
 | certificate expiring | edge certificate renewal (SSL/TLS → Edge Certificates) |
+| identity metadata missing, or `llms.txt` not UTF-8 | a bad deploy, or `_headers` lost its text-file rules |
+| a script's request refused (403) | Browser Integrity Check, or a new bot rule, switched on |
 
 GitHub pauses scheduled workflows in a repository with no activity for 60 days. Re-enable it from
 the Actions tab if that happens.
+
+## Search engines
+
+Optional, since crawlers find the site on their own: submit `https://hutu.si/sitemap.xml` in
+Google Search Console and Bing Webmaster Tools (both need your account), and check the page in
+Google's [Rich Results Test](https://search.google.com/test/rich-results?url=https%3A%2F%2Fhutu.si%2F),
+which should find the ProfilePage.
 
 ## Measuring performance
 
