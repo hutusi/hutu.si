@@ -16,7 +16,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 const TARGET = ['chrome111', 'safari16.4', 'firefox115'];
 const KB = 1024;
-const BUDGET = { html: 14 * KB, total: 150 * KB }; // compressed bytes (gzip, the worst case)
+export const BUDGET = { html: 14 * KB, total: 150 * KB }; // compressed bytes (gzip, the worst case)
 
 const sha = (data, enc = 'hex') => createHash('sha256').update(data).digest(enc);
 
@@ -103,7 +103,7 @@ function sizes(name, data) {
   return row;
 }
 
-async function report(dist, html) {
+async function report(dist, html, log) {
   // Everything a first visit can load: the page plus every fingerprinted asset (both logo
   // densities are counted, so this is an upper bound).
   const rows = [sizes('index.html', Buffer.from(html))];
@@ -112,19 +112,19 @@ async function report(dist, html) {
   }
   const total = rows.reduce((t, r) => ({ raw: t.raw + r.raw, gzip: t.gzip + r.gzip, br: t.br + r.br, zstd: t.zstd + r.zstd }), { raw: 0, gzip: 0, br: 0, zstd: 0 });
   const fmt = (n) => (Number.isNaN(n) ? '—' : (n / KB).toFixed(1).padStart(7));
-  console.log(`\n${'file'.padEnd(46)}${'raw'.padStart(7)}${'gzip'.padStart(7)}${'br'.padStart(7)}${'zstd'.padStart(7)}  (KB)`);
+  log(`\n${'file'.padEnd(46)}${'raw'.padStart(7)}${'gzip'.padStart(7)}${'br'.padStart(7)}${'zstd'.padStart(7)}  (KB)`);
   for (const r of [...rows, { name: 'total (first visit, upper bound)', ...total }]) {
-    console.log(`${r.name.padEnd(46)}${fmt(r.raw)}${fmt(r.gzip)}${fmt(r.br)}${fmt(r.zstd)}`);
+    log(`${r.name.padEnd(46)}${fmt(r.raw)}${fmt(r.gzip)}${fmt(r.br)}${fmt(r.zstd)}`);
   }
   const errors = [];
   if (rows[0].gzip > BUDGET.html) errors.push(`index.html is ${rows[0].gzip} B gzip, budget ${BUDGET.html} B`);
   if (total.gzip > BUDGET.total) errors.push(`first visit is ${total.gzip} B, budget ${BUDGET.total} B`);
-  return errors;
+  return { errors, html: rows[0], total };
 }
 
-// `outDir` lets the local tools (align, og) build a private copy, so they never race the dev
-// server over dist/.
-export async function build({ outDir = join(ROOT, 'dist') } = {}) {
+// `outDir` lets the local tools (align, og) and the tests build a private copy, so they never
+// race the dev server over dist/. Returns the compressed sizes the budgets were checked against.
+export async function build({ outDir = join(ROOT, 'dist'), log = console.log } = {}) {
   const dist = outDir;
   await rm(dist, { recursive: true, force: true });
   await mkdir(join(dist, 'assets'), { recursive: true });
@@ -156,11 +156,10 @@ export async function build({ outDir = join(ROOT, 'dist') } = {}) {
     .replace('{{style-hashes}}', [...new Set(hashesOf(both, 'style'))].join(' '));
   await writeFile(join(dist, '_headers'), headers);
 
-  const errors = [
-    ...(await checkCoverage(join(SRC, 'index.html'), join(ROOT, 'assets/fonts/manifest.json'))),
-    ...(await report(dist, index)),
-  ];
+  const sizes = await report(dist, index, log);
+  const errors = [...(await checkCoverage(join(SRC, 'index.html'), join(ROOT, 'assets/fonts/manifest.json'))), ...sizes.errors];
   if (errors.length) throw new Error(errors.join('\n'));
+  return { html: sizes.html, total: sizes.total };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
