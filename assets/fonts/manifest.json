@@ -1,0 +1,37 @@
+{
+  "huiwen-mincho": {
+    "family": "Huiwen Mincho",
+    "weight": 400,
+    "chars": "刊勇周奇好心智涂胡说",
+    "bytes": 9064,
+    "source": "https://registry.npmjs.org/@fontpkg/huiwen-mincho-gbk/-/huiwen-mincho-gbk-1.0.0.tgz"
+  },
+  "zhuque-fangsong": {
+    "family": "Zhuque Fangsong",
+    "weight": 400,
+    "chars": "「」・一中众作信公再写刊到勇博发号周品回奇好客开微心搜文智次涂看翻者胡英说",
+    "bytes": 11908,
+    "source": "https://github.com/TrionesType/zhuque/releases/download/v0.212/ZhuqueFangsong-v0.212.zip"
+  },
+  "cormorant-garamond-700": {
+    "family": "Cormorant Garamond",
+    "weight": 700,
+    "chars": "histu",
+    "bytes": 1944,
+    "source": "https://raw.githubusercontent.com/google/fonts/5fcfd99f2fa4422991d29f4adae3f2f4b774f058/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf"
+  },
+  "cormorant-garamond-500": {
+    "family": "Cormorant Garamond",
+    "weight": 500,
+    "chars": "HJhnou",
+    "bytes": 1960,
+    "source": "https://raw.githubusercontent.com/google/fonts/5fcfd99f2fa4422991d29f4adae3f2f4b774f058/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf"
+  },
+  "eb-garamond": {
+    "family": "EB Garamond",
+    "weight": 400,
+    "chars": ".:@BCDEFHIJWabcdeghijklmnoprstuvwy· ",
+    "bytes": 8400,
+    "source": "https://raw.githubusercontent.com/google/fonts/f8c1d3d6cc75e30d77130bdcbfbff27e3b6233fe/ofl/ebgaramond/EBGaramond%5Bwght%5D.ttf"
+  }
+}

@@ -1,0 +1,11 @@
+# Applied by the asset layer (Worker responses set their own headers in src/worker.js).
+# Cache-Control is only set on specific paths: rules that match the same path append values.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' {{script-hashes}}; style-src {{style-hashes}}; font-src 'self'; img-src 'self' data: blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
