@@ -1,12 +1,13 @@
 // The scene behind the card: an ink plum branch that grows for about 16 seconds, blossoms that
-// open along it, a magpie that flies in and perches, and petals that fall when it lands or
-// flutters, or when a visitor brushes a blossom. Every visit grows a different branch
+// open along it, a magpie that flies in and perches, and petals that fall when it lands, flutters
+// or flies off, or when a visitor brushes a blossom. Every visit grows a different branch
 // (?seed=N reproduces one). Loaded only after the card has painted (see boot.js).
 //
 // Everything is drawn in stage coordinates (compositions.js) onto viewport-sized canvases,
 // mapped with the scale and offset head.js gives the card. The frame loop runs only while
 // something moves: it sleeps once the branch is grown and the bird is still, wakes for the
-// bird's next blink or flutter or for the pointer, and stops while the tab is hidden.
+// bird's next blink, glance or flutter (or its return) or for the pointer, and stops while the
+// tab is hidden.
 
 import { endTime, growBranch } from './branch.js';
 import { TALL, WIDE } from './compositions.js';
@@ -106,8 +107,8 @@ function reset({ seed, instant }) {
   const rand = createRng(seed);
   const { strokes, flora } = growBranch(scene.comp, rand, scene.view);
   const perch = Magpie.perchOn(strokes[0], scene.comp.magpie);
-  const magpie = perch && new Magpie(scene.comp, perch, rand, { breathing: !scene.light });
-  if (magpie) flora.push(...magpie.blooms(strokes[0]));
+  const magpie = perch && new Magpie(scene.comp, strokes[0], perch, rand, { breathing: !scene.light, shed: scene.shed });
+  if (magpie) flora.push(...magpie.blooms());
   flora.sort((a, b) => a.t - b.t);
   Object.assign(scene, { seed, rand, strokes, flora, magpie, end: endTime(strokes, flora), t: 0, instant, petals: [] });
   redraw();
@@ -292,10 +293,12 @@ function tilt(rx, ry, hover) {
   card.style.setProperty('--hover', hover);
 }
 
+// With a mouse or pen the magpie's head follows the pointer, which turns to a hand over the bird.
 let pointer = null;
 addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch') return;
   const { x, y } = toStage(e);
+  const bird = scene.magpie;
   const [x0, y0, x1, y1] = scene.comp.card;
   const gx = ((x - x0) / (x1 - x0)) * 100;
   const gy = ((y - y0) / (y1 - y0)) * 100;
@@ -303,10 +306,14 @@ addEventListener('pointermove', (e) => {
   card.style.setProperty('--gy', `${gy.toFixed(1)}%`);
   const over = gx > 0 && gx < 100 && gy > 0 && gy < 100;
   if (scene.comp === WIDE && !scene.reduce) tilt(over ? -(gy / 100 - 0.5) * 5 : 0, over ? (gx / 100 - 0.5) * 5 : 0, over ? 1 : 0);
+  if (bird) {
+    root.style.cursor = !e.target.closest('#card, a, button') && bird.hit(x, y) ? 'pointer' : '';
+    if (bird.watch({ x, y })) wake();
+  }
   const prev = pointer;
   pointer = { x, y };
   if (!prev || Math.abs(x - prev.x) + Math.abs(y - prev.y) < 2) return;
-  if (scene.magpie?.poke(x, y, false, performance.now())) wake();
+  if (bird?.hover(x, y, performance.now())) wake();
   touchNearest(x, y, scene.comp.touchRadius);
 });
 root.addEventListener('pointerleave', () => {
@@ -314,12 +321,21 @@ root.addEventListener('pointerleave', () => {
   tilt(0, 0, 0);
   card.style.removeProperty('--gx');
   card.style.removeProperty('--gy');
+  root.style.cursor = '';
+  if (scene.magpie?.watch(null)) wake();
 });
+// A tap or click on the magpie startles it; elsewhere it shakes the nearest blossom, and on a
+// touch screen the bird looks to see what that was.
 addEventListener('pointerdown', (e) => {
   if (e.target.closest('#card, a, button')) return;
   const { x, y } = toStage(e);
-  if (scene.magpie?.poke(x, y, true, performance.now())) wake();
-  else touchNearest(x, y, 30);
+  const bird = scene.magpie;
+  if (bird?.hit(x, y)) {
+    if (bird.poke()) wake();
+    return;
+  }
+  if (e.pointerType === 'touch' && bird?.watch({ x, y }, { tap: true })) wake();
+  touchNearest(x, y, 30);
 });
 
 // ---- Start ----
