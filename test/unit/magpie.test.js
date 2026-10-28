@@ -183,6 +183,28 @@ for (const name of Object.keys(COMPOSITIONS)) {
     assert.equal(m.looking, false);
   });
 
+  test(`${name}: input after the loop has slept is timed by the bird's clock brought up to date`, () => {
+    const b = bird(name, 4);
+    const { m } = b;
+    perched(b);
+    const [fx, fy] = COMPOSITIONS[name].magpie.look.from;
+    const head = { x: m.x + m.dir * fx, y: m.y - fy };
+    // Asleep for 5 s, then a tap behind it: it looks round for its full patience, not a frame.
+    m.sleep(0);
+    assert.ok(m.watch({ x: head.x - m.dir * 100, y: head.y - 20 }, { tap: true, now: 5_000 }));
+    m.wake(5_000);
+    b.run(1);
+    assert.ok(m.looking && !m.bored, 'lost interest at once');
+    b.run(4);
+    // Asleep for 9 s, then two taps a second apart: the second follows the first, so it hops.
+    m.sleep(10_000);
+    assert.ok(m.poke(19_000));
+    m.wake(19_000);
+    b.run(1);
+    assert.ok(m.poke(20_000));
+    assert.equal(m.state, 'hop', 'the second tap started over');
+  });
+
   test(`${name}: with reduced motion it stays still, taps and pointer included`, () => {
     const b = bird(name, 4, { reduce: true });
     const { m } = b;

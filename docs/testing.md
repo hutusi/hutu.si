@@ -49,7 +49,7 @@ tests do) watches them the same way with `watch(page, origin, allow)`.
 | assets fingerprinted, present, cached for good | `unit/build.test.js`, `e2e/routing.spec.js` |
 | every character on the card is in the font subsets | `npm run build`, `unit/charsets.test.js` |
 | the branch: full, off the card, enters from off-screen, magpie can perch, seeded | `unit/branch.test.js` |
-| the magpie: comes from either side facing its flight, hops only onto thick and level wood and is cornered at the tip, taps escalate to flying off, comes back from another corner, head follows the pointer and loses interest, still with reduced motion, lets the loop sleep | `unit/magpie.test.js` |
+| the magpie: comes from either side facing its flight, hops only onto thick and level wood and is cornered at the tip, taps escalate to flying off, comes back from another corner, head follows the pointer and loses interest, input after a sleep timed right, still with reduced motion, lets the loop sleep | `unit/magpie.test.js` |
 | visitor's language picks the side; only that side is reachable | `e2e/card.spec.js` |
 | flipping by click, tap, Enter and Space; the flip button shows on focus | `e2e/card.spec.js` |
 | links, and the accessible structure of each side | `e2e/card.spec.js` |

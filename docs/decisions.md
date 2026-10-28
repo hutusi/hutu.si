@@ -348,3 +348,6 @@ the branch, which looked like a shadow puppet.
 - **The seed decides the side,** and the blossoms by the perch follow it.
 - **New motion reports itself** in `busy` or `nextEvent` (its time away, the moment it loses
   interest in a still pointer), or the loop sleeps through it.
+- **Input is timed by the bird's own clock,** which stands still while the loop sleeps. Anything
+  new that reads the time on input catches the clock up first (`catchUp(now)`), or a tap after a
+  sleep looks seconds old.

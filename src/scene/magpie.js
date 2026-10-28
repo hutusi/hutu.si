@@ -152,7 +152,8 @@ export class Magpie {
   // Where the pointer is, or null once it has gone. Perched, the bird watches it, and loses
   // interest once it has been still for a few seconds. A tap (on a touch screen) catches its eye
   // the same way. Returns true when the scene should wake for the head to move.
-  watch(at, { tap = false } = {}) {
+  watch(at, { tap = false, now } = {}) {
+    this.catchUp(now);
     if (this.state !== 'perch' || this.still) {
       if (!tap) this.look = null;
       return false;
@@ -172,6 +173,7 @@ export class Magpie {
   // A pointer passing close by: it flicks its tail and blinks (at most every 2.6 s). Returns
   // true when it reacted.
   hover(x, y, now) {
+    this.catchUp(now);
     const [reach, dy] = this.cfg.reach;
     if (this.state !== 'perch' || this.still || Math.hypot(x - this.x, y - (this.y - dy)) >= reach) return false;
     if ((this.cooldown || 0) > now) return false;
@@ -184,7 +186,8 @@ export class Magpie {
   // A tap on the bird. Each tap within 8 s of the last startles it a little more: a flutter, a
   // few hops along the branch, then it flies off. Cornered at the thin end of the branch it flies
   // off at once, and a tap while it hops sends it off when it lands. Returns true when it reacted.
-  poke() {
+  poke(now) {
+    this.catchUp(now);
     if (this.still) return false;
     if (this.state === 'hop') {
       this.pokeT = this.clock;
@@ -299,7 +302,26 @@ export class Magpie {
     return Math.max(0, Math.min(T.blink, T.event, T.turn ?? Infinity, T.glance ?? Infinity, bored));
   }
 
-  // Time passed while the scene slept.
+  // The scene's loop sleeps when nothing moves, and the bird's clock with it. sleep() notes when
+  // (in performance.now() ms); wake() moves the clock and its timers on by the time since, and so
+  // does any input first, since what a tap does depends on the time (how long the bird stays
+  // interested, whether taps follow one another).
+  sleep(now) {
+    this.sleptAt ??= now;
+  }
+
+  wake(now) {
+    this.catchUp(now);
+    this.sleptAt = null;
+  }
+
+  catchUp(now) {
+    if (this.sleptAt == null || now == null) return;
+    this.skip((now - this.sleptAt) / 1000);
+    this.sleptAt = now;
+  }
+
+  // Time passed with the clock standing still.
   skip(seconds) {
     this.clock += seconds;
     if (this.state === 'away') this.awayT -= seconds;

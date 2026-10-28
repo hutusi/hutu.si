@@ -150,7 +150,8 @@ Optical alignments the design measured at runtime are measured once with the rea
 - **The loop runs only while something moves**: growth, opening flowers, petals, or a busy bird.
   It then sleeps, and wakes for the bird's next scheduled event (a blink, a glance, an idle
   event, losing interest in a still pointer, its return), for pointer input, or when the tab
-  becomes visible again. While the tab is hidden nothing runs.
+  becomes visible again. While the tab is hidden nothing runs. The bird's clock stands still
+  while the loop sleeps; `sleep()` and `wake()` tell it, and input brings it up to date first.
 - **The magpie** arrives from the left or the right (the seed decides) and faces the way it flew.
   With a mouse or pen its head follows the pointer and the cursor is a hand over it; on touch it
   looks where you tap. Taps on it escalate: a flutter, hops along the branch, then it flies off

@@ -218,7 +218,6 @@ const busy = () => {
 let raf = 0;
 let timer = 0;
 let last = 0;
-let sleptAt = 0;
 
 function frame(now) {
   raf = 0;
@@ -231,7 +230,7 @@ function frame(now) {
 
 function sleep() {
   last = 0;
-  sleptAt ||= performance.now();
+  scene.magpie?.sleep(performance.now());
   const wait = scene.magpie?.nextEvent ?? Infinity;
   if (wait < Infinity) timer = setTimeout(wake, wait * 1000 + 16);
 }
@@ -240,10 +239,7 @@ function wake() {
   clearTimeout(timer);
   timer = 0;
   if (raf || document.hidden) return;
-  if (sleptAt) {
-    scene.magpie?.skip((performance.now() - sleptAt) / 1000);
-    sleptAt = 0;
-  }
+  scene.magpie?.wake(performance.now());
   raf = requestAnimationFrame(frame);
 }
 
@@ -299,6 +295,7 @@ addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch') return;
   const { x, y } = toStage(e);
   const bird = scene.magpie;
+  const now = performance.now();
   const [x0, y0, x1, y1] = scene.comp.card;
   const gx = ((x - x0) / (x1 - x0)) * 100;
   const gy = ((y - y0) / (y1 - y0)) * 100;
@@ -308,12 +305,12 @@ addEventListener('pointermove', (e) => {
   if (scene.comp === WIDE && !scene.reduce) tilt(over ? -(gy / 100 - 0.5) * 5 : 0, over ? (gx / 100 - 0.5) * 5 : 0, over ? 1 : 0);
   if (bird) {
     root.style.cursor = !e.target.closest('#card, a, button') && bird.hit(x, y) ? 'pointer' : '';
-    if (bird.watch({ x, y })) wake();
+    if (bird.watch({ x, y }, { now })) wake();
   }
   const prev = pointer;
   pointer = { x, y };
   if (!prev || Math.abs(x - prev.x) + Math.abs(y - prev.y) < 2) return;
-  if (bird?.hover(x, y, performance.now())) wake();
+  if (bird?.hover(x, y, now)) wake();
   touchNearest(x, y, scene.comp.touchRadius);
 });
 root.addEventListener('pointerleave', () => {
@@ -330,11 +327,12 @@ addEventListener('pointerdown', (e) => {
   if (e.target.closest('#card, a, button')) return;
   const { x, y } = toStage(e);
   const bird = scene.magpie;
+  const now = performance.now();
   if (bird?.hit(x, y)) {
-    if (bird.poke()) wake();
+    if (bird.poke(now)) wake();
     return;
   }
-  if (e.pointerType === 'touch' && bird?.watch({ x, y }, { tap: true })) wake();
+  if (e.pointerType === 'touch' && bird?.watch({ x, y }, { tap: true, now })) wake();
   touchNearest(x, y, 30);
 });
 
