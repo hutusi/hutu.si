@@ -109,20 +109,22 @@ test('a hidden tab draws nothing, and drawing resumes when it is shown', async (
 });
 
 test.describe('the magpie', () => {
-  // The branch grows for about 16 s and the bird takes about 6 s to fly in and land; a fake clock
-  // runs through that, and through its time away, faster than real time. Every frame is still
-  // drawn, which takes WebKit a while.
+  // A fake clock runs through the bird's time away, and more, faster than real time. Every frame
+  // is still drawn, which takes the CI's software rendering a while.
   test.slow();
   // A paused fake clock moves only when a test runs it, so however loaded the machine, every run
-  // plays out frame for frame the same.
+  // plays out frame for frame the same. And a repeat visit in the session skips the intro: the
+  // branch is drawn finished and the bird is on it from the start, without the 24 s (1,500
+  // frames) of growing and flying in.
   const pauseClock = async (page) => {
     await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
     await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
+    await page.addInitScript(() => sessionStorage.setItem('hutusi:seen', '1'));
   };
   const perched = async (page, { seed } = {}) => {
     await pauseClock(page);
     await open(page, { seed });
-    await page.clock.runFor(24_000);
+    await page.clock.runFor(2_000);
     const bird = await birdBox(page);
     expect(bird, 'no magpie on the branch').not.toBeNull();
     return bird;
@@ -146,7 +148,7 @@ test.describe('the magpie', () => {
     await pauseClock(page);
     const visit = async (tap) => {
       await open(page);
-      await page.clock.runFor(24_000);
+      await page.clock.runFor(2_000);
       // Tap once the loop has slept for 4 s, the bird's clock standing still all that time.
       let quiet = 0;
       for (let i = 0, last = -1; quiet < 16 && i < 400; i++) {
@@ -184,9 +186,7 @@ test.describe('the magpie', () => {
       await page.clock.runFor(1_500);
       return canvasHash(page, 3);
     };
-    const tapped = await visit(true);
-    await page.evaluate(() => sessionStorage.clear()); // a first visit again, with the intro
-    expect(tapped).not.toBe(await visit(false));
+    expect(await visit(true)).not.toBe(await visit(false));
   });
 
   test('taps startle it until it flies off, and it comes back to its perch', async ({ page, hasTouch }) => {
