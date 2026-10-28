@@ -11,6 +11,19 @@ import { createRng } from '../../src/scene/rng.js';
 const SEEDS = 120;
 const COMPOSITIONS = { WIDE, TALL };
 const VIEWS = { WIDE: { x0: 0, y0: 0, x1: 1280, y1: 800 }, TALL: { x0: 0, y0: 0, x1: 390, y1: 844 } };
+// Screens that show more of the stage than the stage itself (as head.js fits them), and one that
+// shows less.
+const SCREENS = {
+  WIDE: {
+    'ultrawide 3440×1440': { x0: -507, y0: -80, x1: 1787, y1: 880 },
+    'near-square 1000×1100': { x0: 0, y0: -304.6, x1: 1280, y1: 1103.4 },
+    'phone landscape 844×390': { x0: 112.5, y0: 125, x1: 1167.5, y1: 612.5 },
+  },
+  TALL: {
+    'phone 390×844': { x0: 0, y0: -17, x1: 390, y1: 827 },
+    'iPad Pro portrait 1024×1366': { x0: -147, y0: -51, x1: 536, y1: 860 },
+  },
+};
 const DT = 1 / 60;
 
 // A bird on seed's branch, with a stand-in for the scene, recording the petals it sheds.
@@ -21,7 +34,7 @@ function bird(name, seed, { reduce = false } = {}) {
   const perch = Magpie.perchOn(strokes[0], comp.magpie);
   const shed = [];
   const m = new Magpie(comp, strokes[0], perch, rand, { breathing: false, shed: (x, y, n) => shed.push(n) });
-  const scene = { t: 0, reduce, instant: false };
+  const scene = { t: 0, reduce, instant: false, view: VIEWS[name] };
   const run = (seconds, until = () => false) => {
     for (let t = 0; t < seconds && !until(); t += DT) {
       scene.t += DT;
@@ -44,7 +57,7 @@ for (const name of Object.keys(COMPOSITIONS)) {
     for (let seed = 1; seed <= SEEDS; seed++) {
       const { m, perch } = bird(name, seed);
       sides.add(m.dir);
-      const [p0] = m.route;
+      const [p0] = m.routeFrom(m.entry, VIEWS[name]);
       assert.equal(Math.sign(perch.x - p0[0]), m.dir, `seed ${seed}: flies in from the side it faces away from`);
       const [first] = m.blooms(); // a blossom just ahead of it
       assert.equal(Math.sign(first.x - perch.x), m.dir, `seed ${seed}: its blossom is behind it`);
@@ -151,7 +164,31 @@ for (const name of Object.keys(COMPOSITIONS)) {
         m.comeBack();
         assert.ok(m.entry !== exit && m.entry !== last, `seed ${seed}: from ${m.entry} after leaving by ${exit} and coming in by ${last}`);
         assert.equal(m.dir, Math.sign(perch.x - entries[m.entry][0][0]));
-        assert.equal(m.route[0], entries[m.entry][0]);
+        assert.deepEqual(m.routeFrom(m.entry, VIEWS[name])[0], entries[m.entry][0]);
+      }
+    }
+  });
+
+  test(`${name}: on any screen its flights start and end out of sight`, () => {
+    const comp = COMPOSITIONS[name];
+    const { entries } = comp.magpie;
+    // As far beyond an edge of what the screen shows as the design's point is beyond the stage's.
+    const hidden = ([x, y], [dx, dy], v) =>
+      (dx < 0 && x <= v.x0 + dx) || (dx > comp.w && x >= v.x1 + dx - comp.w) || (dy < 0 && y <= v.y0 + dy) || (dy > comp.h && y >= v.y1 + dy - comp.h);
+    for (let seed = 1; seed <= 20; seed++) {
+      const { m } = bird(name, seed);
+      for (const dir of [1, -1]) {
+        m.dir = dir;
+        const end = m.pathOff(VIEWS[name]).at(-1);
+        assert.ok(end[1] < 0, `seed ${seed}: flies off below the top`);
+        for (const [screen, view] of Object.entries(SCREENS[name])) {
+          for (const k of Object.keys(entries)) {
+            const p0 = m.routeFrom(k, view)[0];
+            assert.ok(hidden(p0, entries[k][0], view), `${screen}: the flight from ${k} starts in sight at ${p0}`);
+          }
+          const off = m.pathOff(view).at(-1);
+          assert.ok(hidden(off, end, view), `${screen}: flying off ends in sight at ${off}`);
+        }
       }
     }
   });

@@ -164,7 +164,9 @@ Optical alignments the design measured at runtime are measured once with the rea
   the pointer included), there are no petals or tilt, and switching the preference on or off is
   honoured live.
 - **Big screens.** A limb's start is pushed back until it is off-screen. Twigs and flowers are
-  still placed relative to the design's start, so big screens get the same branch.
+  still placed relative to the design's start, so big screens get the same branch. The bird's
+  flights start and end as far beyond the edge of the screen as the design has them beyond the
+  stage's.
 
 ## The build (`scripts/build.mjs`)
 

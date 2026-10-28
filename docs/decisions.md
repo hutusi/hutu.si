@@ -351,5 +351,7 @@ the branch, which looked like a shadow puppet.
 - **Input is timed by the bird's own clock,** which stands still while the loop sleeps. Anything
   new that reads the time on input catches the clock up first (`catchUp(now)`), or a tap after a
   sleep looks seconds old.
+- **Out of sight on any screen.** Flights start and end beyond the edge of what the screen shows,
+  not beyond the stage's: a wide or tall screen shows more than the stage.
 - **A lifted finger fires `pointerleave`.** It is not the pointer leaving, so it doesn't clear
   what the bird is looking at.

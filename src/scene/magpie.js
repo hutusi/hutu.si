@@ -30,6 +30,21 @@ function spotAt(stroke, i) {
   return { i, x: p.x, y: p.y - p.w * 0.5 + 0.8, bw: p.w, a, tilt: Math.cos(a) < 0 ? Math.atan2(-Math.sin(a), -Math.cos(a)) : a };
 }
 
+// The design puts the ends of the bird's flights just beyond an edge of the stage (or two). Where
+// a screen shows more than the stage past such an edge, the point moves out by as much, so it is
+// as far beyond what is shown and the bird never appears or vanishes in sight. Beyond one edge is
+// enough, so it takes the smallest such move.
+function offscreen([x, y], { w, h }, view) {
+  const moves = [];
+  if (x < 0) moves.push([Math.min(0, view.x0), 0]);
+  if (x > w) moves.push([Math.max(0, view.x1 - w), 0]);
+  if (y < 0) moves.push([0, Math.min(0, view.y0)]);
+  if (y > h) moves.push([0, Math.max(0, view.y1 - h)]);
+  if (!moves.length) return [x, y];
+  const [dx, dy] = moves.reduce((a, b) => (Math.abs(b[0] + b[1]) < Math.abs(a[0] + a[1]) ? b : a));
+  return [x + dx, y + dy];
+}
+
 // The pose's state, as the design names it: tr/tv the tail spring; hp/ha the head pose and angle
 // shown, hpT/hrT the ones it is turning to, hs a turn under way and hold the pause before the
 // next; blinkT, ruffT, flT (flutter), stT (stretch), nodT and tf (tail flare) the time into each.
@@ -66,6 +81,7 @@ export class Magpie {
   // `shed(x, y, n)` shakes n petals loose from the flowers nearest (x, y).
   constructor(comp, stroke, perch, rand, { breathing, shed }) {
     this.cfg = comp.magpie;
+    this.stage = { w: comp.w, h: comp.h };
     this.stroke = stroke;
     this.rand = rand;
     this.shed = shed;
@@ -74,7 +90,7 @@ export class Magpie {
     this.home = perch;
     this.perchAt(perch);
     this.entry = this.dir > 0 ? 'bl' : 'br';
-    this.route = this.routeFrom(this.entry);
+    this.route = null; // worked out as the flight starts, for the screen it is on
     this.dur = this.cfg.flight[0];
     this.arrive = 16;
     this.state = 'wait';
@@ -88,11 +104,18 @@ export class Magpie {
   }
 
   // A flight in from an entry ([start, first control]) to the perch, approaching from below or,
-  // for the top corners, from above.
-  routeFrom(entry) {
+  // for the top corners, from above, starting out of sight of `view`.
+  routeFrom(entry, view) {
     const [p0, p1] = this.cfg.entries[entry];
     const [ax, ay] = this.cfg.approach[entry[0] === 't' ? 1 : 0];
-    return [p0, p1, [this.x - this.dir * ax, this.y - ay]];
+    return [offscreen(p0, this.stage, view), p1, [this.x - this.dir * ax, this.y - ay]];
+  }
+
+  // Flying off the way it faces, up and out of sight of `view`: the bezier from the perch.
+  pathOff(view) {
+    const D = this.dir;
+    const { via, to } = this.cfg.off;
+    return [[this.x, this.y], ...via.map(([dx, dy]) => [this.x + D * dx, this.y + dy]), offscreen([this.x + D * to[0], to[1]], this.stage, view)];
   }
 
   // Blossoms and buds right around the perch, opening just before it arrives (placed for the side
@@ -254,10 +277,7 @@ export class Magpie {
 
   // Off the branch the way it faces, up and out of the top of the screen.
   flyOff() {
-    const D = this.dir;
-    const { via, to, dur } = this.cfg.off;
-    Object.assign(this, { state: 'off', ot: 0, odur: dur, pushed: false, stT: 0, flT: 0, ruffT: 0, hopQ: false, queue: false, fp: 0, hold: 0, hpT: 'pro', hrT: 0, looking: false, hz: null });
-    this.path = [[this.x, this.y], ...via.map(([dx, dy]) => [this.x + D * dx, this.y + dy]), [this.x + D * to[0], to[1]]];
+    Object.assign(this, { state: 'off', ot: 0, odur: this.cfg.off.dur, path: null, pushed: false, stT: 0, flT: 0, ruffT: 0, hopQ: false, queue: false, fp: 0, hold: 0, hpT: 'pro', hrT: 0, looking: false, hz: null });
   }
 
   // Back to its first perch, from a corner other than the one it left by (and, when it can, the
@@ -271,7 +291,7 @@ export class Magpie {
     this.perchAt(this.home);
     this.dir = this.home.x > entries[entry][0][0] ? 1 : -1;
     this.entry = entry;
-    this.route = this.routeFrom(entry);
+    this.route = null;
     Object.assign(this, { state: 'fly', ft: 0, dur: this.cfg.flight[1], A: 0.9, psiC: 1.3, agit: 0, pumps: null, wasPerched: false });
     Object.assign(this, { look: null, lookAt: null, looking: false, bored: false, hz: null, hp: 'pro', hpT: 'pro', ha: 0, hrT: 0, hs: null, hold: 0 });
   }
@@ -357,10 +377,10 @@ export class Magpie {
       this.awayT -= dt;
       if (this.awayT <= 0) this.comeBack();
     }
-    if (this.state === 'fly') this.flying(dt, P);
+    if (this.state === 'fly') this.flying(dt, P, scene);
     else if (this.state === 'land') this.landing(dt, P);
     else if (this.state === 'hop') this.hopping(dt, P);
-    else if (this.state === 'off') this.leaving(dt, P);
+    else if (this.state === 'off') this.leaving(dt, P, scene);
     else if (this.state === 'perch') this.perched(dt, P, scene);
     if (this.state !== 'fly' && this.state !== 'off' && this.state !== 'hop') P.tilt = this.tilt;
 
@@ -423,7 +443,8 @@ export class Magpie {
 
   // Up from below the screen (or in from a top corner) along a bezier, flapping hard while
   // climbing, gliding, then braking with spread wings and legs down for the last stretch.
-  flying(dt, P) {
+  flying(dt, P, scene) {
+    this.route ??= this.routeFrom(this.entry, scene.view);
     this.ft += dt;
     const u = Math.min(1, this.ft / this.dur);
     const s = (1 - Math.cos(Math.PI * Math.pow(u, 0.85))) / 2;
@@ -530,8 +551,8 @@ export class Magpie {
 
   // A crouch with the wings opening, a push off the branch (which springs back and sheds a few
   // petals), then flapping away along the bezier, shrinking a little with distance.
-  leaving(dt, P) {
-    const o = this.path;
+  leaving(dt, P, scene) {
+    const o = (this.path ??= this.pathOff(scene.view));
     const T0 = 0.16;
     this.ot += dt;
     if (this.ot < T0) {
