@@ -30,18 +30,28 @@ function spotAt(stroke, i) {
   return { i, x: p.x, y: p.y - p.w * 0.5 + 0.8, bw: p.w, a, tilt: Math.cos(a) < 0 ? Math.atan2(-Math.sin(a), -Math.cos(a)) : a };
 }
 
-// The design puts the ends of the bird's flights just beyond an edge of the stage (or two). Where
-// a screen shows more than the stage past such an edge, the point moves out by as much, so it is
-// as far beyond what is shown and the bird never appears or vanishes in sight. Beyond one edge is
-// enough, so it takes the smallest such move.
-function offscreen([x, y], { w, h }, view) {
-  const moves = [];
-  if (x < 0) moves.push([Math.min(0, view.x0), 0]);
-  if (x > w) moves.push([Math.max(0, view.x1 - w), 0]);
-  if (y < 0) moves.push([0, Math.min(0, view.y0)]);
-  if (y > h) moves.push([0, Math.max(0, view.y1 - h)]);
-  if (!moves.length) return [x, y];
-  const [dx, dy] = moves.reduce((a, b) => (Math.abs(b[0] + b[1]) < Math.abs(a[0] + a[1]) ? b : a));
+// How far the drawn bird reaches from the point it flies by, in its own units, over every pose it
+// takes in flight (measured from the art): behind it (the tail), ahead (a wing swept forward),
+// above (raised wings) and below (the tail, swung down as it climbs).
+export const REACH = { back: 150, ahead: 93, up: 150, down: 116 };
+
+// The design puts the ends of the bird's flights beyond an edge of the stage, far enough for the
+// whole bird to be out of sight past it (or all but). Where a screen shows more than the stage
+// past that edge, the point moves out by as much, so the bird stays as far out of sight and never
+// appears or vanishes in view. The edge is the one past which the bird, as it faces there, shows
+// least: flying off to the left its tail trails back over the left edge, so the top hides it.
+// Where the screen shows the stage or less, the paths are the design's.
+function offscreen([x, y], dir, k, { w, h }, view) {
+  const [left, right] = (dir > 0 ? [REACH.back, REACH.ahead] : [REACH.ahead, REACH.back]).map((r) => r * k);
+  // How far the bird would show past each edge of the stage (negative: out of sight by that
+  // much), and the move that keeps it so past the same edge of the screen.
+  const edges = [
+    [x + right, [Math.min(0, view.x0), 0]],
+    [w - (x - left), [Math.max(0, view.x1 - w), 0]],
+    [y + REACH.down * k, [0, Math.min(0, view.y0)]],
+    [h - (y - REACH.up * k), [0, Math.max(0, view.y1 - h)]],
+  ];
+  const [, [dx, dy]] = edges.reduce((a, b) => (b[0] < a[0] ? b : a));
   return [x + dx, y + dy];
 }
 
@@ -108,14 +118,14 @@ export class Magpie {
   routeFrom(entry, view) {
     const [p0, p1] = this.cfg.entries[entry];
     const [ax, ay] = this.cfg.approach[entry[0] === 't' ? 1 : 0];
-    return [offscreen(p0, this.stage, view), p1, [this.x - this.dir * ax, this.y - ay]];
+    return [offscreen(p0, this.dir, this.cfg.scale, this.stage, view), p1, [this.x - this.dir * ax, this.y - ay]];
   }
 
   // Flying off the way it faces, up and out of sight of `view`: the bezier from the perch.
   pathOff(view) {
     const D = this.dir;
     const { via, to } = this.cfg.off;
-    return [[this.x, this.y], ...via.map(([dx, dy]) => [this.x + D * dx, this.y + dy]), offscreen([this.x + D * to[0], to[1]], this.stage, view)];
+    return [[this.x, this.y], ...via.map(([dx, dy]) => [this.x + D * dx, this.y + dy]), offscreen([this.x + D * to[0], to[1]], D, this.cfg.scale, this.stage, view)];
   }
 
   // Blossoms and buds right around the perch, opening just before it arrives (placed for the side

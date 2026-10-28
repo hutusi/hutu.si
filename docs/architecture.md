@@ -165,8 +165,9 @@ Optical alignments the design measured at runtime are measured once with the rea
   honoured live.
 - **Big screens.** A limb's start is pushed back until it is off-screen. Twigs and flowers are
   still placed relative to the design's start, so big screens get the same branch. The bird's
-  flights start and end as far beyond the edge of the screen as the design has them beyond the
-  stage's.
+  flights start and end as far out of sight past the edge of the screen as the design has them
+  past the stage's, judged by the whole bird (its reach, measured from the art, is `REACH` in
+  `magpie.js`).
 
 ## The build (`scripts/build.mjs`)
 

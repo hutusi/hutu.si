@@ -352,6 +352,9 @@ the branch, which looked like a shadow puppet.
   new that reads the time on input catches the clock up first (`catchUp(now)`), or a tap after a
   sleep looks seconds old.
 - **Out of sight on any screen.** Flights start and end beyond the edge of what the screen shows,
-  not beyond the stage's: a wide or tall screen shows more than the stage.
+  not beyond the stage's: a wide or tall screen shows more than the stage. What counts is the
+  whole bird, not the point it flies by: flying off to the left, its tail trails back over the
+  left edge, so it has to go out past the top. Change the art and `REACH` may need measuring
+  again.
 - **A lifted finger fires `pointerleave`.** It is not the pointer leaving, so it doesn't clear
   what the bird is looking at.

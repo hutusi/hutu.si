@@ -119,9 +119,9 @@ test.describe('the magpie', () => {
     await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
     await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
   };
-  const perched = async (page) => {
+  const perched = async (page, { seed } = {}) => {
     await pauseClock(page);
-    await open(page);
+    await open(page, { seed });
     await page.clock.runFor(24_000);
     const bird = await birdBox(page);
     expect(bird, 'no magpie on the branch').not.toBeNull();
@@ -203,5 +203,26 @@ test.describe('the magpie', () => {
     expect(back, 'never came back').not.toBeNull();
     expect(Math.abs(back.y - perch.y)).toBeLessThan(30);
     expect(Math.abs(back.x - perch.x)).toBeLessThan(150); // it may face the other way now
+  });
+
+  test('on a screen that shows more than the stage, it leaves and comes back out of sight', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'geometry, the same in every engine');
+    // At 1000×1100 the screen shows 300 units above and below the stage. On this branch the bird
+    // faces left, so it flies off up and to the left, its tail trailing behind it.
+    await page.setViewportSize({ width: 1000, height: 1100 });
+    const perch = await perched(page, { seed: 2 });
+    // Three quick taps: a flutter, a hop asked for, then off at once.
+    for (let i = 0; i < 3; i++) {
+      await page.mouse.click(perch.x, perch.y);
+      await page.clock.runFor(300);
+    }
+    // Flying off takes 2.26 s from the third tap: its last frames, then the first of its return,
+    // 10 s later.
+    await page.clock.runFor(1_900);
+    expect(await birdBox(page), 'in sight at the end of flying off').toBeNull();
+    await page.clock.runFor(10_200);
+    expect(await birdBox(page), 'in sight at the start of its return').toBeNull();
+    await page.clock.runFor(5_000);
+    expect(await birdBox(page), 'never came back').not.toBeNull();
   });
 });

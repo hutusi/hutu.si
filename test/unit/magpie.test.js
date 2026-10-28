@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { growBranch } from '../../src/scene/branch.js';
 import { TALL, WIDE, inRect } from '../../src/scene/compositions.js';
-import { Magpie } from '../../src/scene/magpie.js';
+import { Magpie, REACH } from '../../src/scene/magpie.js';
 import { createRng } from '../../src/scene/rng.js';
 
 const SEEDS = 120;
@@ -169,25 +169,34 @@ for (const name of Object.keys(COMPOSITIONS)) {
     }
   });
 
-  test(`${name}: on any screen its flights start and end out of sight`, () => {
+  test(`${name}: on any screen it flies in and off as far out of sight as on the stage`, () => {
     const comp = COMPOSITIONS[name];
-    const { entries } = comp.magpie;
-    // As far beyond an edge of what the screen shows as the design's point is beyond the stage's.
-    const hidden = ([x, y], [dx, dy], v) =>
-      (dx < 0 && x <= v.x0 + dx) || (dx > comp.w && x >= v.x1 + dx - comp.w) || (dy < 0 && y <= v.y0 + dy) || (dy > comp.h && y >= v.y1 + dy - comp.h);
+    const { entries, scale: k } = comp.magpie;
+    const stage = VIEWS[name];
+    // How far the whole bird, facing dir at p, is out of sight past the edge of view that hides it
+    // best (negative: it shows that much).
+    const hidden = ([x, y], dir, v) => {
+      const [left, right] = (dir > 0 ? [REACH.back, REACH.ahead] : [REACH.ahead, REACH.back]).map((r) => r * k);
+      return Math.max(v.x0 - (x + right), x - left - v.x1, v.y0 - (y + REACH.down * k), y - REACH.up * k - v.y1);
+    };
     for (let seed = 1; seed <= 20; seed++) {
-      const { m } = bird(name, seed);
+      const { m, perch } = bird(name, seed);
+      for (const k of Object.keys(entries)) {
+        m.dir = Math.sign(perch.x - entries[k][0][0]); // as it flies in from there
+        const p0 = m.routeFrom(k, stage)[0];
+        assert.deepEqual(p0, entries[k][0], `seed ${seed}: the flight from ${k} isn't the design's`);
+        for (const [screen, view] of Object.entries(SCREENS[name])) {
+          const q = m.routeFrom(k, view)[0];
+          assert.ok(hidden(q, m.dir, view) >= hidden(p0, m.dir, stage) - 1e-9, `${screen}: the flight from ${k} starts in sight at ${q}`);
+        }
+      }
       for (const dir of [1, -1]) {
         m.dir = dir;
-        const end = m.pathOff(VIEWS[name]).at(-1);
-        assert.ok(end[1] < 0, `seed ${seed}: flies off below the top`);
+        const end = m.pathOff(stage).at(-1);
+        assert.deepEqual(end, [perch.x + dir * comp.magpie.off.to[0], comp.magpie.off.to[1]], `seed ${seed}: flying off isn't the design's`);
         for (const [screen, view] of Object.entries(SCREENS[name])) {
-          for (const k of Object.keys(entries)) {
-            const p0 = m.routeFrom(k, view)[0];
-            assert.ok(hidden(p0, entries[k][0], view), `${screen}: the flight from ${k} starts in sight at ${p0}`);
-          }
-          const off = m.pathOff(view).at(-1);
-          assert.ok(hidden(off, end, view), `${screen}: flying off ends in sight at ${off}`);
+          const q = m.pathOff(view).at(-1);
+          assert.ok(hidden(q, dir, view) >= hidden(end, dir, stage) - 1e-9, `${screen}: flying off ${dir > 0 ? 'right' : 'left'} ends in sight at ${q}`);
         }
       }
     }
