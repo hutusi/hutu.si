@@ -113,8 +113,14 @@ test.describe('the magpie', () => {
   // runs through that, and through its time away, faster than real time. Every frame is still
   // drawn, which takes WebKit a while.
   test.slow();
+  // A paused fake clock moves only when a test runs it, so however loaded the machine, every run
+  // plays out frame for frame the same.
+  const pauseClock = async (page) => {
+    await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
+  };
   const perched = async (page) => {
-    await page.clock.install();
+    await pauseClock(page);
     await open(page);
     await page.clock.runFor(24_000);
     const bird = await birdBox(page);
@@ -135,10 +141,9 @@ test.describe('the magpie', () => {
   test('on a touch screen it looks where you tap, even after the scene has slept', async ({ page, hasTouch }) => {
     test.skip(!hasTouch, 'with a mouse it follows the pointer instead');
     await page.addInitScript(countFrames);
-    // A paused clock, so that two visits play out frame for frame alike: one with a tap behind
-    // the bird's head, one without. If the tap catches its eye, they end up different.
-    await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
-    await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
+    // Two visits that play out frame for frame alike: one with a tap above the bird's head, one
+    // without. If the tap catches its eye, they end up different.
+    await pauseClock(page);
     const visit = async (tap) => {
       await open(page);
       await page.clock.runFor(24_000);
