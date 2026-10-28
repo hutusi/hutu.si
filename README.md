@@ -1,9 +1,11 @@
 # hutu.si
 
 John Hu's homepage: a bilingual calling card (Chinese front, English back; click, tap or use the
-keyboard to flip it) over an ink plum branch that grows behind it. A magpie flies in and perches;
-petals fall when it lands or flutters, or when you brush a blossom. Every visit grows a
-different branch (`?seed=N` reproduces one).
+keyboard to flip it) over an ink plum branch that grows behind it. A magpie flies in from one
+side or the other and perches. Its head follows your pointer, and tapping it makes it flutter,
+hop along the branch and fly off, to come back a little later. Petals fall when it lands,
+flutters or takes off, or when you brush a blossom. Every visit grows a different branch
+(`?seed=N` reproduces one).
 
 No framework and no runtime dependencies. Visitors load one HTML file, five small font subsets,
 two images and one deferred script, all from hutu.si, plus the Cloudflare Web Analytics beacon

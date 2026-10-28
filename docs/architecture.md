@@ -140,19 +140,28 @@ Optical alignments the design measured at runtime are measured once with the rea
 | `branch.js` | `growBranch(comp, rand, view)`: strokes and flowers, each with the time it appears |
 | `ink.js`, `flora.js` | drawing the strokes (with dry-brush streaks) and the flowers |
 | `petals.js` | falling petals |
-| `magpie.js` | the bird: perch, flight in, landing, idle behaviours, and its art |
+| `magpie.js` | the bird's behaviour: perch, flights in and back, landing, idle behaviours, head poses, reactions to the pointer and to taps, hops, flying off |
+| `magpie-art.js` | the bird's art: parts pre-rendered from feather strokes, spread and lifted wings, legs, the head in three poses |
 | `paper.js` | specks and fibres on the paper |
 | `rng.js` | mulberry32, so `?seed=N` reproduces a branch |
 
 - **Layers.** Five canvases: ink, settled flowers, opening flowers and the bird under the card,
   and falling petals over it. They are viewport-sized and drawn in stage coordinates.
 - **The loop runs only while something moves**: growth, opening flowers, petals, or a busy bird.
-  It then sleeps, and wakes for the bird's next scheduled event (blink, flutter), for pointer
-  input, or when the tab becomes visible again. While the tab is hidden nothing runs.
+  It then sleeps, and wakes for the bird's next scheduled event (a blink, a glance, an idle
+  event, losing interest in a still pointer, its return), for pointer input, or when the tab
+  becomes visible again. While the tab is hidden nothing runs.
+- **The magpie** arrives from the left or the right (the seed decides) and faces the way it flew.
+  With a mouse or pen its head follows the pointer and the cursor is a hand over it; on touch it
+  looks where you tap. Taps on it escalate: a flutter, hops along the branch, then it flies off
+  and comes back about 10 s later from another corner. `update()` works out each pose without a
+  canvas, so `unit/magpie.test.js` drives it in Node; the per-composition numbers are in
+  `compositions.js`.
 - **Light mode** applies on phones (coarse pointer or a small screen): fewer petals, and no
   continuous "breathing", so the loop can sleep between the bird's events.
-- **Reduced motion** draws the finished scene at once. The bird is perched and still, there are
-  no petals or tilt, and switching the preference on or off is honoured live.
+- **Reduced motion** draws the finished scene at once. The bird is perched and still (taps and
+  the pointer included), there are no petals or tilt, and switching the preference on or off is
+  honoured live.
 - **Big screens.** A limb's start is pushed back until it is off-screen. Twigs and flowers are
   still placed relative to the design's start, so big screens get the same branch.
 

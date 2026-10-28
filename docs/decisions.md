@@ -122,13 +122,15 @@ live in one media query at the end of `critical.css`.
   for the bird's next event, and stops while the tab is hidden.
 - **Light mode on phones.** Fewer petals, and no continuous breathing.
 
-**Why.** It's reproducible for the social preview and the tests, and cheap on batteries: an idle
-page draws nothing.
+**Why.** It's reproducible for the social preview and the tests, and cheap on batteries: on a
+phone an idle page draws nothing. (On desktop the perched bird breathes, so the loop keeps
+running while it is there.)
 
 **Keep in mind.**
 - Unit tests check the generator over hundreds of seeds and screens: a full branch, no flowers
   on the card, and a perch for the magpie.
-- `npm run og` uses seed 4, so changing the generator changes the preview.
+- `npm run og` uses seed 4, so changing the generator, or how the magpie uses the RNG, changes
+  the preview.
 - Anything new that moves must report itself as busy, or the loop will sleep through it.
 
 ## 9. Accessibility
@@ -318,3 +320,31 @@ and 0.78 s cold, with about 1 KB on the wire. First visits are unchanged.
   visitor on their second visit. For a bad *worker*, use the kill switch.
 - **The scene keeps its timing:** a cached return visit still starts it only after paint and
   fonts.
+
+## 19. The magpie reacts, and comes from either side
+
+**Decision.** The magpie behaves as in the design's latest Homepage and Mobile files.
+- **Either side.** It flies in from the left or the right and perches facing the way it flew,
+  so it never turns round on the branch. Coming back, it enters from a corner other than the one
+  it left by.
+- **Its head.** With a mouse or pen, the head follows the pointer within range and loses interest
+  once the pointer has been still for a few seconds. On a touch screen it looks where you tap.
+  The pointer type decides this, not the composition.
+- **Taps escalate:** a flutter, then a few hops along the branch, then it flies off, to come back
+  about 10 s later. It hops only onto wood thick and level enough, so near the tip it is cornered
+  and flies off at the first tap.
+- **Reduced motion.** It stays still, taps included. The design gives a tap a small ruffle there;
+  that is left out to keep [9](#9-accessibility).
+
+**Why.** The design is the spec. Facing the way it flew replaces the design's earlier turn on
+the branch, which looked like a shadow puppet.
+
+**Keep in mind.**
+- **The resting bird is the original drawing.** The lifting and stretching wing needs four
+  layers, but compositing them shifts edge pixels, so `magpie-art.js` draws the resting wing in
+  one piece and then the same feathers again, from the same random state, as layers.
+- **No canvas filters.** WebKit's 2D canvas ignores `ctx.filter`. The far wing's shadow is a
+  copy darkened once.
+- **The seed decides the side,** and the blossoms by the perch follow it.
+- **New motion reports itself** in `busy` or `nextEvent` (its time away, the moment it loses
+  interest in a still pointer), or the loop sleeps through it.
