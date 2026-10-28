@@ -206,66 +206,86 @@ export function buildArt(K, pxPerUnit, resolution) {
       c.fill();
     }
   });
-  const wing = mk(-66, -68, 100, 56, (c) => {
-    [[-58, -19.5], [-55, -21.6], [-52, -23.7], [-49, -25.7], [-46, -27.5]].forEach(([tx, ty], i) => {
-      const bx = -2 - i * 1.4, by = -37.5 - i * 1.1;
-      F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 6.2, PRI);
-    });
-    [[-38, -29.5], [-35, -31.8], [-32, -34.2], [-29, -36.6], [-26, -39]].forEach(([tx, ty], i) => {
-      const bx = 8 - i * 2, by = -43.5 - i * 1.5;
-      F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 8.8, SEC);
-    });
-    [[6, -51.5, -24, -42], [4, -53.5, -19, -45.5]].forEach(([bx, by, tx, ty]) => F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 9.6, TER));
-    for (let j = 6; j >= 0; j--) F(c, 15 - j * 3.3, -46.8 + j * 0.2, 2.86 + j * 0.02, 15 - j * 0.4, 8.2, DARK);
-    for (let j = 7; j >= 0; j--) F(c, 16.5 - j * 2.4, -50.5 + j * 0.15, 2.76, 8.5, 6.2, DARK);
-    for (let i = 0; i < 16; i++) F(c, Rr(10, 18.5), Rr(-51, -42), 2.3 + Rr(-0.3, 0.3), Rr(3.8, 5.2), 4, PLAIN);
-    c.strokeStyle = 'rgba(10,8,6,0.32)';
-    c.lineWidth = 3;
-    c.stroke(new Path2D('M15 -53 C4 -51 -10 -48 -25 -43.5'));
-    const SCP = { ...WHITE, line: 'rgba(96,86,78,0.42)' };
-    [[16, -55.5, -25, -42.6, 10.5], [15, -57, -20, -45.4, 11], [14, -58, -14.5, -48, 11], [13, -58.6, -8.5, -50.6, 10], [12, -58.8, -2.5, -53, 8.4]].forEach(([bx, by, tx, ty, w]) => {
-      tx += Rr(-4, 3);
-      ty += Rr(-1.2, 1.8);
-      bx += Rr(-0.8, 0.8);
-      by += Rr(-0.6, 0.6);
-      F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), w * Rr(0.78, 1.18), SCP);
-    });
-    for (let i = 0; i < 10; i++) {
-      const t = rnd(), bx = 14 - t * 22 + Rr(-1, 1), by = -59 + t * 7.5 + Rr(-1.6, 1.6);
-      F(c, bx, by, 2.78 + Rr(-0.16, 0.16), Rr(4, 11.5), Rr(3.2, 8), SCP);
-    }
-    for (let i = 0; i < 7; i++) {
-      const bx = Rr(-20, 13);
-      F(c, bx, -55.5 + (16 - bx) * 0.315 + Rr(3.4, 5.6), 2.84 + Rr(-0.14, 0.14), Rr(3.5, 7.5), Rr(2.8, 5.2), PLAIN);
-    }
-    c.fillStyle = INK;
-    c.fill(new Path2D('M18 -71 C12 -66 6 -60 -2 -56.5 C-12 -52 -22 -46 -30 -38.5 L-30 -41 C-22 -48.5 -12 -54.6 -2 -59 C6 -62.5 12 -68 18 -73 Z'));
-    {
-      const pts = [[18, -71], [6, -60], [-2, -56.5], [-12, -52], [-22, -46]], bandY = (x) => {
-        for (let i = 0; i < 4; i++) {
-          const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
-          if (x <= x0 && x >= x1) return y0 + (y1 - y0) * (x0 - x) / (x0 - x1);
-        }
-        return -46;
-      };
-      for (let i = 0; i < 18; i++) {
-        const x = Rr(-20, 15);
-        spike(c, x, bandY(x) - 0.3, 2.2 + Rr(-0.4, 0.4), rnd() < 0.2 ? Rr(5, 7) : Rr(1.4, 4.4), Rr(0.7, 1.6));
+  // The folded wing, in four layers so it can lift and stretch (the design's g4MagWingL): the
+  // primaries, the secondaries and coverts, the white scapulars, and the flank feathers.
+  const wingLayers = [
+    (c) => {
+      [[-58, -19.5], [-55, -21.6], [-52, -23.7], [-49, -25.7], [-46, -27.5]].forEach(([tx, ty], i) => {
+        const bx = -2 - i * 1.4, by = -37.5 - i * 1.1;
+        F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 6.2, PRI);
+      });
+    },
+    (c) => {
+      [[-38, -29.5], [-35, -31.8], [-32, -34.2], [-29, -36.6], [-26, -39]].forEach(([tx, ty], i) => {
+        const bx = 8 - i * 2, by = -43.5 - i * 1.5;
+        F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 8.8, SEC);
+      });
+      [[6, -51.5, -24, -42], [4, -53.5, -19, -45.5]].forEach(([bx, by, tx, ty]) => F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), 9.6, TER));
+      for (let j = 6; j >= 0; j--) F(c, 15 - j * 3.3, -46.8 + j * 0.2, 2.86 + j * 0.02, 15 - j * 0.4, 8.2, DARK);
+      for (let j = 7; j >= 0; j--) F(c, 16.5 - j * 2.4, -50.5 + j * 0.15, 2.76, 8.5, 6.2, DARK);
+      for (let i = 0; i < 16; i++) F(c, Rr(10, 18.5), Rr(-51, -42), 2.3 + Rr(-0.3, 0.3), Rr(3.8, 5.2), 4, PLAIN);
+      c.strokeStyle = 'rgba(10,8,6,0.32)';
+      c.lineWidth = 3;
+      c.stroke(new Path2D('M15 -53 C4 -51 -10 -48 -25 -43.5'));
+    },
+    (c) => {
+      const SCP = { ...WHITE, line: 'rgba(96,86,78,0.42)' };
+      [[16, -55.5, -25, -42.6, 10.5], [15, -57, -20, -45.4, 11], [14, -58, -14.5, -48, 11], [13, -58.6, -8.5, -50.6, 10], [12, -58.8, -2.5, -53, 8.4]].forEach(([bx, by, tx, ty, w]) => {
+        tx += Rr(-4, 3);
+        ty += Rr(-1.2, 1.8);
+        bx += Rr(-0.8, 0.8);
+        by += Rr(-0.6, 0.6);
+        F(c, bx, by, Math.atan2(ty - by, tx - bx), Math.hypot(tx - bx, ty - by), w * Rr(0.78, 1.18), SCP);
+      });
+      for (let i = 0; i < 10; i++) {
+        const t = rnd(), bx = 14 - t * 22 + Rr(-1, 1), by = -59 + t * 7.5 + Rr(-1.6, 1.6);
+        F(c, bx, by, 2.78 + Rr(-0.16, 0.16), Rr(4, 11.5), Rr(3.2, 8), SCP);
       }
-    }
-    const FL = { ...WHITE, line: 'rgba(96,86,78,0.26)' };
-    for (let i = 0; i < 6; i++) {
-      const t = i / 5, x = 13 - t * 30;
-      F(c, x, -37.6 + (14 - x) * 0.309 + Rr(-0.4, 0.5), 2.9 + Rr(-0.12, 0.12), Rr(7, 9), 6.4, FL);
-    }
-    const BR = { ...PLAIN, line: 'rgba(130,144,170,0.12)' };
-    for (let i = 0; i < 6; i++) {
-      const t = i / 5;
-      F(c, 19.6 - t * 2.4, -53 + t * 13, 2.15 + Rr(-0.15, 0.15), Rr(7, 9), 7, BR);
-    }
-  });
-  const head = mk(4, -86, 60, 34, (c) => {
-    const hp = new Path2D('M14 -71 C18 -76 24 -77.6 28 -77.6 C35 -77.6 39 -72 38.8 -66 C38.6 -61 36 -57.5 32 -56.8 C26 -55.8 20 -57 15 -60.5 C12.5 -63.5 12.5 -68 14 -71 Z');
+      for (let i = 0; i < 7; i++) {
+        const bx = Rr(-20, 13);
+        F(c, bx, -55.5 + (16 - bx) * 0.315 + Rr(3.4, 5.6), 2.84 + Rr(-0.14, 0.14), Rr(3.5, 7.5), Rr(2.8, 5.2), PLAIN);
+      }
+      c.fillStyle = INK;
+      c.fill(new Path2D('M18 -71 C12 -66 6 -60 -2 -56.5 C-12 -52 -22 -46 -30 -38.5 L-30 -41 C-22 -48.5 -12 -54.6 -2 -59 C6 -62.5 12 -68 18 -73 Z'));
+      {
+        const pts = [[18, -71], [6, -60], [-2, -56.5], [-12, -52], [-22, -46]], bandY = (x) => {
+          for (let i = 0; i < 4; i++) {
+            const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+            if (x <= x0 && x >= x1) return y0 + (y1 - y0) * (x0 - x) / (x0 - x1);
+          }
+          return -46;
+        };
+        for (let i = 0; i < 18; i++) {
+          const x = Rr(-20, 15);
+          spike(c, x, bandY(x) - 0.3, 2.2 + Rr(-0.4, 0.4), rnd() < 0.2 ? Rr(5, 7) : Rr(1.4, 4.4), Rr(0.7, 1.6));
+        }
+      }
+    },
+    (c) => {
+      const FL = { ...WHITE, line: 'rgba(96,86,78,0.26)' };
+      for (let i = 0; i < 6; i++) {
+        const t = i / 5, x = 13 - t * 30;
+        F(c, x, -37.6 + (14 - x) * 0.309 + Rr(-0.4, 0.5), 2.9 + Rr(-0.12, 0.12), Rr(7, 9), 6.4, FL);
+      }
+      const BR = { ...PLAIN, line: 'rgba(130,144,170,0.12)' };
+      for (let i = 0; i < 6; i++) {
+        const t = i / 5;
+        F(c, 19.6 - t * 2.4, -53 + t * 13, 2.15 + Rr(-0.15, 0.15), Rr(7, 9), 7, BR);
+      }
+    },
+  ];
+  // At rest the wing is drawn in one piece, exactly as it always was (layers composited apart
+  // differ at the edges). Then the same feathers again from the same random state, a layer each.
+  const sd0 = sd;
+  const wing = mk(-66, -68, 100, 56, (c) => wingLayers.forEach((draw) => draw(c)));
+  sd = sd0;
+  const [wingP, wingC, wingS, wingF] = wingLayers.map((draw) => mk(-66, -68, 100, 56, draw));
+  // The head in profile, or turned three-quarters towards the viewer (tq): a fuller crown, the
+  // eye further forward and foreshortened, a shorter beak.
+  const headArt = (c, tq) => {
+    const hp = new Path2D(tq
+      ? 'M14 -71 C18 -76.4 24 -78 28.6 -78 C35.8 -78 40.2 -72.4 39.8 -66 C39.4 -60.6 36.4 -57 32 -56.5 C26 -55.8 20 -57 15 -60.5 C12.5 -63.5 12.5 -68 14 -71 Z'
+      : 'M14 -71 C18 -76 24 -77.6 28 -77.6 C35 -77.6 39 -72 38.8 -66 C38.6 -61 36 -57.5 32 -56.8 C26 -55.8 20 -57 15 -60.5 C12.5 -63.5 12.5 -68 14 -71 Z');
     c.fillStyle = INK;
     c.fill(hp);
     c.save();
@@ -280,6 +300,13 @@ export function buildArt(K, pxPerUnit, resolution) {
     g.addColorStop(1, 'rgba(80,122,110,0)');
     c.fillStyle = g;
     c.fillRect(4, -86, 60, 34);
+    if (tq) {
+      g = c.createRadialGradient(35, -62.5, 0, 35, -62.5, 6);
+      g.addColorStop(0, 'rgba(120,124,146,0.22)');
+      g.addColorStop(1, 'rgba(120,124,146,0)');
+      c.fillStyle = g;
+      c.fillRect(4, -86, 60, 34);
+    }
     g = c.createLinearGradient(0, -63, 0, -56);
     g.addColorStop(0, 'rgba(0,0,0,0)');
     g.addColorStop(1, 'rgba(0,0,0,0.35)');
@@ -300,34 +327,38 @@ export function buildArt(K, pxPerUnit, resolution) {
     }
     c.strokeStyle = 'rgba(172,178,198,0.26)';
     c.lineWidth = 1.3;
-    c.stroke(new Path2D('M14.5 -71 C18 -75.6 24 -77.2 28 -77.2 C34 -77.2 37.8 -72.6 38.4 -68'));
+    c.stroke(new Path2D(tq ? 'M14.5 -71 C18 -76 24 -77.6 28.6 -77.6 C34.6 -77.6 38.8 -73 39.4 -68' : 'M14.5 -71 C18 -75.6 24 -77.2 28 -77.2 C34 -77.2 37.8 -72.6 38.4 -68'));
     c.restore();
+    const ex = tq ? 32.6 : 30, ey = -69.5, rx = tq ? 0.82 : 1;
+    // The eye, foreshortened when turned (arcs in profile, so that head stays exactly as it was).
+    const eye = (r, a0, a1) => (tq ? c.ellipse(ex, ey, r * rx, r, 0, a0, a1) : c.arc(ex, ey, r, a0, a1));
     c.fillStyle = '#3a3431';
     c.beginPath();
-    c.arc(30, -69.5, 4.1, 0, 6.283);
+    eye(4.1, 0, 6.283);
     c.fill();
-    g = c.createRadialGradient(30, -69.5, 0, 30, -69.5, 3.25);
+    g = c.createRadialGradient(ex, ey, 0, ex, ey, 3.25);
     g.addColorStop(0, '#060504');
     g.addColorStop(0.55, '#0d0907');
     g.addColorStop(1, '#2e2016');
     c.fillStyle = g;
     c.beginPath();
-    c.arc(30, -69.5, 3.25, 0, 6.283);
+    eye(3.25, 0, 6.283);
     c.fill();
     c.strokeStyle = 'rgba(150,142,134,0.55)';
     c.lineWidth = 0.45;
     c.beginPath();
-    c.arc(30, -69.5, 3.7, -2.7, -0.3);
+    eye(3.7, -2.7, -0.3);
     c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.92)';
     c.beginPath();
-    c.ellipse(31.1, -70.7, 1, 0.8, -0.5, 0, 6.283);
+    c.ellipse(ex + 1.1 * rx, ey - 1.2, rx, 0.8, -0.5, 0, 6.283);
     c.fill();
     c.fillStyle = 'rgba(255,255,255,0.35)';
     c.beginPath();
-    c.arc(28.7, -68.1, 0.45, 0, 6.283);
+    c.arc(ex - 1.3 * rx, ey + 1.4, 0.45, 0, 6.283);
     c.fill();
-    const up = new Path2D('M37 -72.4 L50.4 -66.2 L51.8 -65.1 Q46 -65.3 37.4 -64.9 Z'), lo = new Path2D('M37.4 -64.7 Q45 -65 51.6 -65 Q46 -62.4 37.4 -59.8 Z');
+    const up = new Path2D(tq ? 'M37.8 -73 L46.6 -66 L47.8 -64.9 Q43.4 -64.9 38.2 -64.5 Z' : 'M37 -72.4 L50.4 -66.2 L51.8 -65.1 Q46 -65.3 37.4 -64.9 Z');
+    const lo = new Path2D(tq ? 'M38.2 -64.3 Q43.2 -64.7 47.6 -64.8 Q43.6 -61.9 38.2 -59.4 Z' : 'M37.4 -64.7 Q45 -65 51.6 -65 Q46 -62.4 37.4 -59.8 Z');
     g = c.createLinearGradient(0, -72.5, 0, -64.5);
     g.addColorStop(0, '#4b4643');
     g.addColorStop(0.35, '#211d1b');
@@ -341,27 +372,103 @@ export function buildArt(K, pxPerUnit, resolution) {
     c.fillStyle = g;
     c.fill(lo);
     c.strokeStyle = 'rgba(200,194,188,0.42)';
-    c.lineWidth = 0.7;
-    c.stroke(new Path2D('M38.6 -71.5 L49.6 -66.6'));
+    c.lineWidth = tq ? 0.85 : 0.7;
+    c.stroke(new Path2D(tq ? 'M38.9 -72.3 L46 -66.4' : 'M38.6 -71.5 L49.6 -66.6'));
     c.strokeStyle = 'rgba(0,0,0,0.9)';
     c.lineWidth = 0.55;
-    c.stroke(new Path2D('M37.4 -64.8 L51.4 -65.05'));
+    c.stroke(new Path2D(tq ? 'M38.2 -64.4 L47.4 -64.85' : 'M37.4 -64.8 L51.4 -65.05'));
     c.strokeStyle = 'rgba(150,145,140,0.3)';
     c.lineWidth = 0.45;
-    c.stroke(new Path2D('M39.5 -60.7 Q45 -62 49.6 -63.9'));
+    c.stroke(new Path2D(tq ? 'M40 -60.6 Q43.6 -61.8 46.4 -63.8' : 'M39.5 -60.7 Q45 -62 49.6 -63.9'));
     c.strokeStyle = 'rgba(10,8,7,0.75)';
     c.lineWidth = 0.4;
     c.stroke(up);
     c.stroke(lo);
     for (let i = 0; i < 14; i++) {
-      const x = Rr(33, 38), y = Rr(-73, -66.5);
+      const x = Rr(33, 38) + (tq ? 1.4 : 0), y = Rr(-73, -66.5), k = tq ? 0.75 : 1;
       c.strokeStyle = i % 3 ? 'rgba(28,24,22,0.95)' : 'rgba(140,138,146,0.4)';
       c.lineWidth = 0.42;
       c.beginPath();
       c.moveTo(x, y);
-      c.quadraticCurveTo(x + 2.5, y + Rr(-0.3, 0.3), x + Rr(4.5, 7), y + Rr(0.4, 1.6));
+      c.quadraticCurveTo(x + 2.5 * k, y + Rr(-0.3, 0.3), x + Rr(4.5, 7) * k, y + Rr(0.4, 1.6));
       c.stroke();
     }
+  };
+  const head = mk(4, -86, 60, 34, (c) => headArt(c, false));
+  const headTQ = mk(4, -86, 60, 34, (c) => headArt(c, true));
+  // Turned away: the profile head mirrored about the crown, over the dark nape.
+  const headBk = mk(-6, -86, 50, 38, (c) => {
+    let s = 77;
+    const q = () => {
+      s = Math.imul(s, 1664525) + 1013904223 >>> 0;
+      return s / 4294967296;
+    };
+    const np = new Path2D('M30 -71 C34.5 -70 37.6 -67.5 38.4 -64.2 C38.9 -61.6 38.4 -59.4 37.6 -57.6 C36.8 -55.6 36 -54 35.2 -52.4 L24 -52.4 L22 -64 Z');
+    let g = c.createLinearGradient(26, -57, 32.5, -60);
+    g.addColorStop(0, 'rgba(23,19,15,0)');
+    g.addColorStop(1, INK);
+    c.fillStyle = g;
+    c.fill(np);
+    c.save();
+    c.clip(np);
+    for (let i = 0; i < 9; i++) {
+      const t = i / 8, x0 = 26 + t * 9, y0 = -55 - t * 8;
+      c.strokeStyle = 'rgba(150,160,184,' + (0.08 + q() * 0.08).toFixed(3) + ')';
+      c.lineWidth = 0.4;
+      c.beginPath();
+      c.moveTo(x0 - 3, y0 + 2);
+      c.quadraticCurveTo(x0 + 1, y0 - 1.5, x0 + 4.5, y0 - 0.5);
+      c.stroke();
+    }
+    c.restore();
+    c.save();
+    c.translate(49.6, 0);
+    c.scale(-1, 1);
+    headArt(c, false);
+    c.restore();
+    // Fade the mirrored throat into the nape.
+    c.globalCompositeOperation = 'destination-out';
+    g = c.createLinearGradient(0, -62, 0, -56);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.85)');
+    c.fillStyle = g;
+    c.fillRect(8, -62, 23, 8);
+    c.globalCompositeOperation = 'source-over';
+  });
+  // What the folded wing covers, shown while it lifts: the body's ink and scallops in its shape.
+  const under = mk(-66, -68, 100, 56, (c) => {
+    c.save();
+    c.clip(bodyP);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(wingP.cv, 0, 0);
+    c.drawImage(wingC.cv, 0, 0);
+    c.setTransform(RS, 0, 0, RS, 66 * RS, 68 * RS);
+    c.globalCompositeOperation = 'source-in';
+    c.fillStyle = INK;
+    c.fillRect(-66, -68, 100, 56);
+    c.globalCompositeOperation = 'source-atop';
+    const g = c.createLinearGradient(-6, -58, 4, -18);
+    g.addColorStop(0, 'rgba(98,118,146,0.2)');
+    g.addColorStop(0.5, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.3)');
+    c.fillStyle = g;
+    c.fillRect(-66, -68, 100, 56);
+    let s = 31;
+    const q = () => {
+      s = Math.imul(s, 1664525) + 1013904223 >>> 0;
+      return s / 4294967296;
+    };
+    for (let i = 0; i < 150; i++) scallop(c, -42 + q() * 70, -62 + q() * 44, 1.5 + q(), 2.62 + (q() - 0.5) * 0.36, 'rgba(150,162,188,' + (0.06 + q() * 0.09).toFixed(3) + ')');
+    c.restore();
+  });
+  // The far wing lifts in shadow. The design darkens it with filter: brightness(0.78) as it draws;
+  // a copy darkened once looks the same and needs no canvas filter, which WebKit ignores.
+  const shaded = (o) => mk(o.x, o.y, o.w, o.h, (c) => {
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(o.cv, 0, 0);
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = 'rgba(0,0,0,0.22)';
+    c.fillRect(0, 0, o.cv.width, o.cv.height);
   });
   return {
     K,
@@ -369,8 +476,20 @@ export function buildArt(K, pxPerUnit, resolution) {
     T0y,
     tail,
     body,
+    wingP,
+    wingC,
+    wingS,
+    wingF,
     wing,
+    under,
+    farWing: [shaded(wingP), shaded(wingC)],
     head,
+    headTQ,
+    headBk,
+    // The dark of the neck, which shows behind the head as it tips up or turns away.
+    neckP: new Path2D('M31 -67 C34.5 -66.6 37.2 -64.6 37.8 -62 C38.1 -60.6 37.6 -59.4 37 -58.4 C36.2 -56.6 35.4 -54.6 34.6 -52 C34.2 -50.6 33.8 -49.4 33.4 -48 L26 -48 L26 -66 Z'),
+    // Where the eye is in each head pose, for the blink: [x, y, rx, ry].
+    eyes: { pro: [30, -69.5, 4.1, 4.1], tq: [32.6, -69.5, 3.4, 4.1], back: [19.6, -69.5, 4.1, 4.1] },
     SEC: { ...SEC, barbs: 0 },
     COV: { ...DARK, barbs: 0 },
     PRIF: { cols: [[0, '#efeae0'], [0.58, '#f4f0e7'], [0.7, '#2a2a36'], [1, '#15131a']], line: 'rgba(70,64,60,0.55)', shaft: 'rgba(120,112,104,0.4)', asym: 0.7 }
@@ -410,6 +529,8 @@ function drawSpread(c, art, P, side) {
   c.restore();
 }
 
+// A leg from the hip to the foot, bent at the ankle (two-bone IK), so it folds as the bird
+// crouches to hop. Once perched (legA ≈ 1) the toes wrap a branch of width bw.
 function drawLegs(c, P, far, bw) {
   const la = P.legA;
   if (la < 0.03) return;
@@ -417,20 +538,39 @@ function drawLegs(c, P, far, bw) {
   const fx = hx - 7 + (tx0 - hx + 7) * la, fy = hy + 6 + (0 - hy - 6) * la, col = far ? '#3d3532' : '#1c1816';
   c.save();
   c.globalAlpha *= Math.min(1, la * 1.5);
-  const an = Math.atan2(fy - hy, fx - hx), nx = -Math.sin(an), ny = Math.cos(an);
+  const Lt = 8.4, Lb = 3.4, vx = hx - fx, vy = hy - fy, dl = Math.hypot(vx, vy) || 1, ux = vx / dl, uy = vy / dl;
+  let jx, jy;
+  if (dl >= Lt + Lb) {
+    jx = hx - ux * Lb;
+    jy = hy - uy * Lb;
+  } else {
+    const ca = Math.max(-1, Math.min(1, (Lt * Lt + dl * dl - Lb * Lb) / (2 * Lt * dl))), sa = Math.sqrt(1 - ca * ca);
+    const ax = fx + Lt * (ux * ca - uy * sa), ay = fy + Lt * (uy * ca + ux * sa), bx = fx + Lt * (ux * ca + uy * sa), by = fy + Lt * (uy * ca - ux * sa);
+    if (ax < bx) [jx, jy] = [ax, ay];
+    else [jx, jy] = [bx, by];
+  }
+  const seg = (x0, y0, x1, y1, w0, w1) => {
+    const an = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(an), ny = Math.cos(an);
+    c.beginPath();
+    c.moveTo(x0 + nx * w0, y0 + ny * w0);
+    c.lineTo(x1 + nx * w1, y1 + ny * w1);
+    c.lineTo(x1 - nx * w1, y1 - ny * w1);
+    c.lineTo(x0 - nx * w0, y0 - ny * w0);
+    c.closePath();
+    c.fill();
+    return [nx, ny];
+  };
   c.fillStyle = col;
+  seg(hx, hy, jx, jy, 1.6, 1.3);
   c.beginPath();
-  c.moveTo(hx + nx * 1.25, hy + ny * 1.25);
-  c.lineTo(fx + nx * 0.8, fy + ny * 0.8);
-  c.lineTo(fx - nx * 0.8, fy - ny * 0.8);
-  c.lineTo(hx - nx * 1.25, hy - ny * 1.25);
-  c.closePath();
+  c.arc(jx, jy, 1.3, 0, 6.283);
   c.fill();
+  const [nx, ny] = seg(jx, jy, fx, fy, 1.25, 0.8);
   c.strokeStyle = 'rgba(128,120,114,0.5)';
   c.lineWidth = 0.35;
   c.beginPath();
   for (let i = 1; i < 6; i++) {
-    const t = 0.3 + i * 0.11, x = hx + (fx - hx) * t, y = hy + (fy - hy) * t;
+    const t = 0.12 + i * 0.13, x = jx + (fx - jx) * t, y = jy + (fy - jy) * t;
     c.moveTo(x - nx * 1.1, y - ny * 1.1);
     c.lineTo(x + nx * 1.1, y + ny * 1.1 - 0.4);
   }
@@ -471,9 +611,33 @@ function drawLegs(c, P, far, bw) {
   c.restore();
 }
 
+// The folded wing lifted off the back by wl (a flutter) and drawn out along it by ws (a
+// stretch): the primaries swing a little further than the coverts.
+function drawWingLift(c, [primaries, coverts], wl, far, ws = 0) {
+  const px = far ? 16.5 : 14, py = far ? -55 : -52, a = 0.3 * wl * (far ? 1.15 : 1) - 0.2 * ws;
+  const tx = px - 6 * ws, ty = py - 2.6 * wl + 2.5 * ws, sx = 1 + 0.07 * ws;
+  c.save();
+  c.translate(tx, ty);
+  c.rotate(a * 1.25 - 0.06 * ws);
+  c.scale(sx, 1);
+  c.translate(-px, -py);
+  c.drawImage(primaries.cv, primaries.x, primaries.y, primaries.w, primaries.h);
+  c.restore();
+  c.save();
+  c.translate(tx, ty);
+  c.rotate(a);
+  c.scale(sx, 1);
+  c.translate(-px, -py);
+  c.drawImage(coverts.cv, coverts.x, coverts.y, coverts.w, coverts.h);
+  c.restore();
+}
+
+// Draws the bird in pose P: where it is and which way it faces, the pitch of its body, its wings
+// (folded, lifting or spread), tail, legs and head. bw is the width of the branch it stands on.
 export function drawMagpie(c, art, P, bw) {
   const A = art;
   const cx = -6, cy = -40, d = (o) => c.drawImage(o.cv, o.x, o.y, o.w, o.h);
+  const wl = P.wl || 0, ws = P.ws || 0;
   c.save();
   c.translate(P.x + P.shake, P.y + P.hop);
   c.rotate(P.tilt * 0.35);
@@ -502,6 +666,12 @@ export function drawMagpie(c, art, P, bw) {
   c.translate(cx, cy);
   c.scale(P.sc, P.sc);
   c.translate(-cx, -cy);
+  if (wl > 0.004) {
+    c.save();
+    c.globalAlpha *= Math.min(1, wl * 8);
+    drawWingLift(c, A.farWing, wl, true);
+    c.restore();
+  }
   if (P.spreadA > 0.01) drawSpread(c, art, P, -1);
   c.save();
   c.translate(A.T0x, A.T0y);
@@ -513,20 +683,52 @@ export function drawMagpie(c, art, P, bw) {
   if (P.foldA > 0.01) {
     c.save();
     c.globalAlpha = P.foldA;
-    d(A.wing);
+    if (wl > 0.004 || ws > 0.004) {
+      c.save();
+      c.globalAlpha *= Math.min(1, (wl + ws) * 25);
+      d(A.under);
+      c.restore();
+      if (ws > 0.004) d(A.wingF);
+      drawWingLift(c, [A.wingP, A.wingC], wl, false, ws);
+      d(A.wingS);
+      // The flank feathers tuck under the wing as it stretches.
+      const fa = 1 - Math.min(1, ws * 4);
+      if (fa > 0.004) {
+        c.save();
+        c.globalAlpha *= fa;
+        d(A.wingF);
+        c.restore();
+      }
+    } else d(A.wing);
     c.restore();
   }
   if (P.spreadA > 0.01) drawSpread(c, art, P, 1);
+  // The head: in profile, three-quarters or turned away, held steady against the body's bobbing
+  // (hox, hoy, and stab against the pitch). The dark of the neck shows as it tips up or turns.
+  const hp = P.hp || 'pro';
+  const nk = hp === 'back' ? 1 : hp === 'pro' ? Math.min(1, Math.max(0, (-P.hr - 0.03) * 12)) : 0;
+  if (nk > 0) {
+    c.save();
+    c.globalAlpha *= nk;
+    const g = c.createLinearGradient(27.5, -57, 33.8, -60);
+    g.addColorStop(0, 'rgba(23,19,15,0)');
+    g.addColorStop(1, '#17130f');
+    c.fillStyle = g;
+    c.fill(A.neckP);
+    c.restore();
+  }
+  const hq = hp === 'back' ? 31.6 : 18;
   c.save();
-  c.translate(18, -62);
-  c.rotate(P.hr);
+  c.translate(hq + (P.hox || 0), -62 + (P.hoy || 0));
+  c.rotate(P.hr - P.pitch * 0.85 * (P.stab || 0));
   c.scale(0.88, 0.88);
-  c.translate(-18, 62 + P.bob);
-  d(A.head);
+  c.translate(-hq, 62 + P.bob);
+  d(hp === 'back' ? A.headBk : hp === 'tq' ? A.headTQ : A.head);
   if (P.blink > 0.02) {
+    const [ex, ey, rx, ry] = A.eyes[hp];
     c.fillStyle = 'rgba(70,64,60,' + Math.min(1, P.blink * 1.1).toFixed(2) + ')';
     c.beginPath();
-    c.arc(30, -69.5, 4.1, 0, 6.283);
+    c.ellipse(ex, ey, rx, ry, 0, 0, 6.283);
     c.fill();
   }
   c.restore();
