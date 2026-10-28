@@ -1,7 +1,7 @@
 # Testing
 
 ```
-test/unit/    node:test, no browser: the branch generator, the build output, font coverage, the RNG
+test/unit/    node:test, no browser: the branch generator, the magpie, the build output, font coverage, the RNG
 test/e2e/     Playwright: the site in Chromium, WebKit and Firefox, at desktop and phone sizes
 test/smoke/   Playwright: the live site (run daily by GitHub Actions)
 ```
@@ -49,6 +49,7 @@ tests do) watches them the same way with `watch(page, origin, allow)`.
 | assets fingerprinted, present, cached for good | `unit/build.test.js`, `e2e/routing.spec.js` |
 | every character on the card is in the font subsets | `npm run build`, `unit/charsets.test.js` |
 | the branch: full, off the card, enters from off-screen, magpie can perch, seeded | `unit/branch.test.js` |
+| the magpie: comes from either side facing its flight, hops only onto thick and level wood and is cornered at the tip, taps escalate to flying off, comes back from another corner, flies in and out of sight on any screen, head follows the pointer and loses interest, input after a sleep timed right, still with reduced motion, lets the loop sleep | `unit/magpie.test.js` |
 | visitor's language picks the side; only that side is reachable | `e2e/card.spec.js` |
 | flipping by click, tap, Enter and Space; the flip button shows on focus | `e2e/card.spec.js` |
 | links, and the accessible structure of each side | `e2e/card.spec.js` |
@@ -58,7 +59,8 @@ tests do) watches them the same way with `watch(page, origin, allow)`.
 | card and "Watch again" on screen at 11 sizes, incl. phones held sideways; 1.5× cap | `e2e/layout.spec.js` |
 | text stays put when the web fonts swap in (incl. the 412 px role wrap, Firefox fallbacks) | `e2e/fonts.spec.js` |
 | logo: preloaded first, placeholder then fade, failure keeps the disc, works without JS | `e2e/logo.spec.js` |
-| scene starts after the card's paint and fonts; seeded; holds still with reduced motion; restarts when it's turned off; stops in a hidden tab; "Watch again" | `e2e/scene.spec.js` |
+| scene starts after the card's paint and fonts; seeded; holds still with reduced motion (a tap on the magpie too); restarts when it's turned off; stops in a hidden tab; "Watch again" | `e2e/scene.spec.js` |
+| the magpie on the page: a hand cursor over it; on touch it looks where you tap, even after the scene has slept; taps until it flies off, and it comes back | `e2e/scene.spec.js` |
 | security headers, reserved paths, static 404, redirects, caching | `e2e/routing.spec.js` |
 | identity: bilingual ProfilePage, `rel="me"`, social tags, robots/sitemap, `llms.txt`, all links in agreement | `unit/identity.test.js` |
 | text files served as UTF-8; both sides readable without JavaScript | `e2e/routing.spec.js`, `e2e/card.spec.js` |

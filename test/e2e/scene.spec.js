@@ -1,7 +1,8 @@
 // The ink plum scene behind the card: when it starts, that it is seeded, and that it stops
-// drawing when nothing moves, with reduced motion, and in a hidden tab.
+// drawing when nothing moves, with reduced motion, and in a hidden tab; and the magpie's
+// reactions to the pointer and to taps.
 import { expect, test } from './fixtures.js';
-import { canvasHash, countFrames, hold, open } from './helpers.js';
+import { birdBox, canvasHash, countFrames, hold, open } from './helpers.js';
 
 test.use({ locale: 'zh-CN' });
 
@@ -53,6 +54,23 @@ test.describe('with reduced motion', () => {
     expect(await frames(page)).toBe(before);
   });
 
+  test('a tap on the magpie moves nothing, and the pointer stays an arrow over it', async ({ page, hasTouch }) => {
+    await page.addInitScript(countFrames);
+    await open(page);
+    await settle(page, 1000);
+    const bird = await birdBox(page);
+    const before = await frames(page);
+    if (hasTouch) await page.touchscreen.tap(bird.x, bird.y);
+    else {
+      await page.mouse.move(bird.x, bird.y);
+      expect(await page.evaluate(() => document.documentElement.style.cursor)).toBe('');
+      await page.mouse.down();
+      await page.mouse.up();
+    }
+    await settle(page, 1500);
+    expect(await frames(page)).toBe(before);
+  });
+
   test('turning reduced motion off brings the magpie back to life', async ({ page }) => {
     await page.addInitScript(countFrames);
     await open(page);
@@ -88,4 +106,123 @@ test('a hidden tab draws nothing, and drawing resumes when it is shown', async (
   expect(await frames(page)).toBe(before);
   await setHidden(false);
   await expect.poll(() => frames(page)).toBeGreaterThan(before);
+});
+
+test.describe('the magpie', () => {
+  // A fake clock runs through the bird's time away, and more, faster than real time. Every frame
+  // is still drawn, which takes the CI's software rendering a while.
+  test.slow();
+  // A paused fake clock moves only when a test runs it, so however loaded the machine, every run
+  // plays out frame for frame the same. And a repeat visit in the session skips the intro: the
+  // branch is drawn finished and the bird is on it from the start, without the 24 s (1,500
+  // frames) of growing and flying in.
+  const pauseClock = async (page) => {
+    await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
+    await page.addInitScript(() => sessionStorage.setItem('hutusi:seen', '1'));
+  };
+  const perched = async (page, { seed } = {}) => {
+    await pauseClock(page);
+    await open(page, { seed });
+    await page.clock.runFor(2_000);
+    const bird = await birdBox(page);
+    expect(bird, 'no magpie on the branch').not.toBeNull();
+    return bird;
+  };
+
+  test('the pointer turns to a hand over it', async ({ page, hasTouch }) => {
+    test.skip(hasTouch, 'no pointer to hover on a touch screen');
+    const bird = await perched(page);
+    const cursor = () => page.evaluate(() => document.documentElement.style.cursor);
+    await page.mouse.move(bird.x, bird.y);
+    expect(await cursor()).toBe('pointer');
+    await page.mouse.move(bird.x, bird.y + 200);
+    expect(await cursor()).toBe('');
+  });
+
+  test('on a touch screen it looks where you tap, even after the scene has slept', async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, 'with a mouse it follows the pointer instead');
+    await page.addInitScript(countFrames);
+    // Two visits that play out frame for frame alike: one with a tap above the bird's head, one
+    // without. If the tap catches its eye, they end up different.
+    await pauseClock(page);
+    const visit = async (tap) => {
+      await open(page);
+      await page.clock.runFor(2_000);
+      // Tap once the loop has slept for 4 s, the bird's clock standing still all that time.
+      let quiet = 0;
+      for (let i = 0, last = -1; quiet < 16 && i < 400; i++) {
+        await page.clock.runFor(250);
+        const n = await frames(page);
+        quiet = n === last ? quiet + 1 : 0;
+        last = n;
+      }
+      expect(quiet, 'the scene never slept for 4 s').toBe(16);
+      if (tap) {
+        // Somewhere above its head, behind or ahead: in its range, off the bird, and with no
+        // blossom within 30 units (a tap there shakes it, which draws on the same random numbers
+        // and so changes everything after).
+        const { x, top } = await birdBox(page);
+        const clear = await page.evaluate(({ x, top }) => {
+          const c = document.querySelectorAll('canvas.layer')[1];
+          const { s } = window.hutuStage;
+          const k = c.width / innerWidth;
+          const r = Math.ceil(30 * s * k);
+          const ahead = Math.sign(top.x - x); // its head is at the front
+          // Offsets from the top of its head, in stage units: behind it (turning round), then
+          // ahead of it (tipping up).
+          const spots = [[-80, 30], [-60, 50], [-70, 70], [-100, 40], [-120, 10], [60, 40], [80, 60], [40, 80]];
+          return spots
+            .map(([dx, dy]) => ({ x: top.x + ahead * dx * s, y: top.y - dy * s }))
+            .find((p) => {
+              const d = c.getContext('2d').getImageData(Math.round(p.x * k) - r, Math.round(p.y * k) - r, 2 * r, 2 * r).data;
+              for (let i = 3; i < d.length; i += 4) if (d[i]) return false;
+              return true;
+            });
+        }, { x, top });
+        expect(clear, 'no spot above its head clear of blossoms').toBeTruthy();
+        await page.touchscreen.tap(clear.x, clear.y);
+      }
+      await page.clock.runFor(1_500);
+      return canvasHash(page, 3);
+    };
+    expect(await visit(true)).not.toBe(await visit(false));
+  });
+
+  test('taps startle it until it flies off, and it comes back to its perch', async ({ page, hasTouch }) => {
+    const perch = await perched(page);
+    // A flutter, then hops along the branch, then off (sooner if it is cornered at the tip).
+    for (let taps = 0, bird = perch; bird && taps < 4; taps++, bird = await birdBox(page)) {
+      if (hasTouch) await page.touchscreen.tap(bird.x, bird.y);
+      else await page.mouse.click(bird.x, bird.y);
+      await page.clock.runFor(3_000);
+    }
+    expect(await birdBox(page), 'still on the branch after four taps').toBeNull();
+    await page.clock.runFor(17_000);
+    const back = await birdBox(page);
+    expect(back, 'never came back').not.toBeNull();
+    expect(Math.abs(back.y - perch.y)).toBeLessThan(30);
+    expect(Math.abs(back.x - perch.x)).toBeLessThan(150); // it may face the other way now
+  });
+
+  test('on a screen that shows more than the stage, it leaves and comes back out of sight', async ({ page, browserName, isMobile }) => {
+    test.skip(browserName !== 'chromium' || isMobile, 'geometry, the same in every engine');
+    // At 1000×1100 the screen shows 300 units above and below the stage. On this branch the bird
+    // faces left, so it flies off up and to the left, its tail trailing behind it.
+    await page.setViewportSize({ width: 1000, height: 1100 });
+    const perch = await perched(page, { seed: 2 });
+    // Three quick taps: a flutter, a hop asked for, then off at once.
+    for (let i = 0; i < 3; i++) {
+      await page.mouse.click(perch.x, perch.y);
+      await page.clock.runFor(300);
+    }
+    // Flying off takes 2.26 s from the third tap: its last frames, then the first of its return,
+    // 10 s later.
+    await page.clock.runFor(1_900);
+    expect(await birdBox(page), 'in sight at the end of flying off').toBeNull();
+    await page.clock.runFor(10_200);
+    expect(await birdBox(page), 'in sight at the start of its return').toBeNull();
+    await page.clock.runFor(5_000);
+    expect(await birdBox(page), 'never came back').not.toBeNull();
+  });
 });
