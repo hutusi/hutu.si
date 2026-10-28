@@ -32,6 +32,24 @@ export const canvasHash = (page, layer = 0) =>
     return h;
   }, layer);
 
+// Where the magpie is on screen, in CSS px (the bounding box of what its layer shows), or null
+// when it isn't there.
+export const birdBox = (page) =>
+  page.evaluate(() => {
+    const c = document.querySelectorAll('canvas.layer')[3];
+    const { width: w, height: h } = c;
+    const d = c.getContext('2d').getImageData(0, 0, w, h).data;
+    let [x0, y0, x1, y1] = [w, h, -1, -1];
+    for (let y = 0; y < h; y += 2) {
+      for (let x = 0; x < w; x += 2) {
+        if (d[(y * w + x) * 4 + 3] < 64) continue;
+        [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+      }
+    }
+    const k = w / innerWidth;
+    return x1 < 0 ? null : { x: (x0 + x1) / 2 / k, y: (y0 + y1) / 2 / k, width: (x1 - x0) / k, height: (y1 - y0) / k };
+  });
+
 // Counts the scene's animation frames, from page load on (an init script).
 export const countFrames = () => {
   window.__frames = 0;
