@@ -60,7 +60,7 @@ tests do) watches them the same way with `watch(page, origin, allow)`.
 | text stays put when the web fonts swap in (incl. the 412 px role wrap, Firefox fallbacks) | `e2e/fonts.spec.js` |
 | logo: preloaded first, placeholder then fade, failure keeps the disc, works without JS | `e2e/logo.spec.js` |
 | scene starts after the card's paint and fonts; seeded; holds still with reduced motion (a tap on the magpie too); restarts when it's turned off; stops in a hidden tab; "Watch again" | `e2e/scene.spec.js` |
-| the magpie on the page: a hand cursor over it; taps until it flies off, and it comes back | `e2e/scene.spec.js` |
+| the magpie on the page: a hand cursor over it; on touch it looks where you tap, even after the scene has slept; taps until it flies off, and it comes back | `e2e/scene.spec.js` |
 | security headers, reserved paths, static 404, redirects, caching | `e2e/routing.spec.js` |
 | identity: bilingual ProfilePage, `rel="me"`, social tags, robots/sitemap, `llms.txt`, all links in agreement | `unit/identity.test.js` |
 | text files served as UTF-8; both sides readable without JavaScript | `e2e/routing.spec.js`, `e2e/card.spec.js` |

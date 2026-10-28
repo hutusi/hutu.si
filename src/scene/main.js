@@ -313,7 +313,8 @@ addEventListener('pointermove', (e) => {
   if (bird?.hover(x, y, now)) wake();
   touchNearest(x, y, scene.comp.touchRadius);
 });
-root.addEventListener('pointerleave', () => {
+root.addEventListener('pointerleave', (e) => {
+  if (e.pointerType === 'touch') return; // a finger lifting after a tap, not a pointer leaving
   pointer = null;
   tilt(0, 0, 0);
   card.style.removeProperty('--gx');

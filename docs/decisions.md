@@ -351,3 +351,5 @@ the branch, which looked like a shadow puppet.
 - **Input is timed by the bird's own clock,** which stands still while the loop sleeps. Anything
   new that reads the time on input catches the clock up first (`catchUp(now)`), or a tap after a
   sleep looks seconds old.
+- **A lifted finger fires `pointerleave`.** It is not the pointer leaving, so it doesn't clear
+  what the bird is looking at.

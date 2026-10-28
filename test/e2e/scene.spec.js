@@ -132,6 +132,58 @@ test.describe('the magpie', () => {
     expect(await cursor()).toBe('');
   });
 
+  test('on a touch screen it looks where you tap, even after the scene has slept', async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, 'with a mouse it follows the pointer instead');
+    await page.addInitScript(countFrames);
+    // A paused clock, so that two visits play out frame for frame alike: one with a tap behind
+    // the bird's head, one without. If the tap catches its eye, they end up different.
+    await page.clock.install({ time: new Date('2026-10-01T00:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-10-01T00:00:01Z'));
+    const visit = async (tap) => {
+      await open(page);
+      await page.clock.runFor(24_000);
+      // Tap once the loop has slept for 4 s, the bird's clock standing still all that time.
+      let quiet = 0;
+      for (let i = 0, last = -1; quiet < 16 && i < 400; i++) {
+        await page.clock.runFor(250);
+        const n = await frames(page);
+        quiet = n === last ? quiet + 1 : 0;
+        last = n;
+      }
+      expect(quiet, 'the scene never slept for 4 s').toBe(16);
+      if (tap) {
+        // Somewhere above its head, behind or ahead: in its range, off the bird, and with no
+        // blossom within 30 units (a tap there shakes it, which draws on the same random numbers
+        // and so changes everything after).
+        const { x, top } = await birdBox(page);
+        const clear = await page.evaluate(({ x, top }) => {
+          const c = document.querySelectorAll('canvas.layer')[1];
+          const { s } = window.hutuStage;
+          const k = c.width / innerWidth;
+          const r = Math.ceil(30 * s * k);
+          const ahead = Math.sign(top.x - x); // its head is at the front
+          // Offsets from the top of its head, in stage units: behind it (turning round), then
+          // ahead of it (tipping up).
+          const spots = [[-80, 30], [-60, 50], [-70, 70], [-100, 40], [-120, 10], [60, 40], [80, 60], [40, 80]];
+          return spots
+            .map(([dx, dy]) => ({ x: top.x + ahead * dx * s, y: top.y - dy * s }))
+            .find((p) => {
+              const d = c.getContext('2d').getImageData(Math.round(p.x * k) - r, Math.round(p.y * k) - r, 2 * r, 2 * r).data;
+              for (let i = 3; i < d.length; i += 4) if (d[i]) return false;
+              return true;
+            });
+        }, { x, top });
+        expect(clear, 'no spot above its head clear of blossoms').toBeTruthy();
+        await page.touchscreen.tap(clear.x, clear.y);
+      }
+      await page.clock.runFor(1_500);
+      return canvasHash(page, 3);
+    };
+    const tapped = await visit(true);
+    await page.evaluate(() => sessionStorage.clear()); // a first visit again, with the intro
+    expect(tapped).not.toBe(await visit(false));
+  });
+
   test('taps startle it until it flies off, and it comes back to its perch', async ({ page, hasTouch }) => {
     const perch = await perched(page);
     // A flutter, then hops along the branch, then off (sooner if it is cornered at the tip).
