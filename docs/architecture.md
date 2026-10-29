@@ -41,8 +41,9 @@ visitor ── https://hutu.si ──▶ Cloudflare edge (zone hutu.si)
   <script>  head.js
 <body>
   SVG sprite of the four icons
-  <main class=frame> <div class=stage> <article class=card>
-      flip button (shown on keyboard focus), shadow, 9 edge layers,
+  <main class=frame> <div class=stage>
+    <div id=lang hidden>  the language switch, "中文 / English" (boot.js shows it)
+    <article class=card>  shadow, 9 edge layers,
       <section class="face front" lang=zh-Hans> … <section class="face back" lang=en>
     <button id=again hidden>  "再看一次 · Watch again"
   <script>  boot.js
@@ -121,7 +122,11 @@ Optical alignments the design measured at runtime are measured once with the rea
   only the back's opacity changes over 0.3 s, over a front kept opaque, so the card is never
   see-through mid-fade.
 - **Flipping.** A click or tap on the card flips it, except on links, buttons, images and the
-  popup. The flip button is visually hidden until it gets keyboard focus.
+  popup. So does the language switch, "中文 / English", in the stage's corner beside "Watch
+  again" (on the tall composition, under the card's left edge). It shows the side you're on as
+  text and the other one as its button, always in that order, and it is the first stop when
+  tabbing in. Its width is fixed, so "Watch again" sits at a fixed distance whichever font has
+  loaded. Without JavaScript it stays hidden, since it couldn't flip anything.
 - **WeChat popup.** It opens on hover (pointer devices), click, tap, Enter or Space, and closes
   on Escape, an outside tap or loss of focus. Closing it while hovered marks it `shut`, which
   suppresses the hover preview until the pointer leaves.

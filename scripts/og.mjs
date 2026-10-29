@@ -24,7 +24,7 @@ try {
     await page.goto(`${server.url}/?seed=${seed}`);
     await page.waitForSelector('#again:not([hidden])');
     await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(() => (document.getElementById('again').hidden = true)); // noise in a preview
+    await page.evaluate(() => ['again', 'lang'].forEach((id) => (document.getElementById(id).hidden = true))); // noise in a preview
     await page.waitForTimeout(800);
     const shot = await page.screenshot({ type: 'png' });
     const file = seeds.length ? `${ROOT}.cache/og-${seed}.jpg` : `${ROOT}static/og.jpg`;

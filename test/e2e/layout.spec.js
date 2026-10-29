@@ -16,15 +16,19 @@ const overlap = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.
 const inside = (r, w, h) => r.x >= -0.5 && r.y >= -0.5 && r.x + r.width <= w + 0.5 && r.y + r.height <= h + 0.5;
 
 for (const [width, height] of SIZES) {
-  test(`${width}×${height}: the card and "Watch again" fit on screen`, async ({ page }) => {
+  test(`${width}×${height}: the card, "Watch again" and the language switch fit on screen`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await open(page);
     const card = await page.locator('#card').boundingBox();
     const again = await page.locator('#again').boundingBox();
+    const lang = await page.locator('#lang').boundingBox();
     expect(inside(card, width, height), 'card on screen').toBe(true);
     // "Watch again" once fell below the fold on phones held sideways.
     expect(inside(again, width, height), '"Watch again" on screen').toBe(true);
     expect(overlap(card, again), '"Watch again" clear of the card').toBe(false);
+    expect(inside(lang, width, height), 'the language switch on screen').toBe(true);
+    expect(overlap(card, lang), 'the language switch clear of the card').toBe(false);
+    expect(overlap(again, lang), 'the language switch clear of "Watch again"').toBe(false);
     const tall = width / height <= 0.9;
     expect(card.height > card.width, 'tall composition on portrait screens').toBe(tall);
   });

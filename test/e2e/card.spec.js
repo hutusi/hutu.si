@@ -102,18 +102,29 @@ for (const side of SIDES) {
 test.describe('keyboard', () => {
   test.use({ locale: 'zh-CN' });
 
-  test('the flip button appears on focus and flips with Enter and Space', async ({ page, browserName }) => {
+  test('the language switch shows the side you are on, is the first stop, and flips with Enter and Space', async ({ page, browserName }) => {
     await open(page, { scene: false });
+    const lang = page.locator('#lang');
     const turn = page.locator('#turn');
-    await expect(turn).toHaveCSS('opacity', '0');
+    const now = page.locator('#now');
+    // Always "中文 / English": the side you're on as text, the other as the button.
+    const order = async () => (await now.boundingBox()).x < (await turn.boundingBox()).x ? 'now first' : 'turn first';
+    await expect(lang).toBeVisible();
+    await expect(now).toHaveText('中文');
+    await expect(turn).toHaveAccessibleName('English');
+    await expect(turn).toHaveAttribute('lang', 'en');
+    expect(await order()).toBe('now first');
     // It is the first stop when tabbing in (Safari reaches buttons with Option-Tab).
     await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
     await expect(turn).toBeFocused();
-    await expect(turn).toHaveCSS('opacity', '1');
-    await expect(turn).toHaveAccessibleName(/Flip to English/);
     await page.keyboard.press('Enter');
     await expect(page.locator('#front')).toHaveAttribute('inert', '');
-    await expect(turn).toHaveAccessibleName(/Flip to Chinese/);
+    await expect(now).toHaveText('English');
+    await expect(turn).toHaveAccessibleName('中文');
+    await expect(turn).toHaveAttribute('lang', 'zh-Hans');
+    expect(await order()).toBe('turn first');
+    // Focus stays on it, so the same key flips back.
+    await expect(turn).toBeFocused();
     await page.keyboard.press('Space');
     await expect(page.locator('#front')).not.toHaveAttribute('inert');
   });
@@ -140,6 +151,7 @@ test('without JavaScript, both sides are readable, each in its own language', as
   await page.goto('/');
   await expect(page.locator('section[lang="zh-Hans"] h1')).toHaveText('胡智勇');
   await expect(page.locator('section[lang="en"] h1')).toHaveText('John Hu');
+  await expect(page.locator('#lang'), 'a language switch that would do nothing').toBeHidden();
   for (const lang of ['zh-Hans', 'en']) {
     await expect(page.locator(`section[lang="${lang}"] a[rel~="me"]`)).toHaveCount(6);
     await expect(page.locator(`section[lang="${lang}"]`)).not.toHaveAttribute('inert');
@@ -187,7 +199,7 @@ test.describe('flipping with reduced motion', () => {
     let w = await flipAndWatch(page, '#front', 500);
     expect(w.at.inert).toEqual({ front: true, back: false });
     expect(w.at.lang).toBe('en');
-    expect(w.at.label).toMatch(/Flip to Chinese/);
+    expect(w.at.label).toBe('中文');
     expect(declared(w.declared.back, 'opacity')).toBe('0.3s');
     expect(declared(w.declared.front, 'visibility', 'transitionDelay'), 'the front hides only once covered').toBe('0.3s');
     for (const f of w.frames) {

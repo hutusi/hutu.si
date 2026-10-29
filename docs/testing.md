@@ -50,12 +50,12 @@ tests do) watches them the same way with `watch(page, origin, allow)`.
 | every character on the card is in the font subsets | `npm run build`, `unit/charsets.test.js` |
 | the branch: full, off the card, enters from off-screen, magpie can perch, seeded | `unit/branch.test.js` |
 | visitor's language picks the side; only that side is reachable | `e2e/card.spec.js` |
-| flipping by click, tap, Enter and Space; the flip button shows on focus | `e2e/card.spec.js` |
+| flipping by click, tap, Enter and Space; the language switch: the side you're on, then the other, first stop, hidden without JavaScript | `e2e/card.spec.js` |
 | links, and the accessible structure of each side | `e2e/card.spec.js` |
 | intro plays once per session | `e2e/card.spec.js` |
 | WeChat popup: tap, outside tap, Escape (also while hovered), keyboard, hover | `e2e/wechat.spec.js` |
 | icon row lines up on both sides (the WebKit button-baseline bug) | `e2e/wechat.spec.js` |
-| card and "Watch again" on screen at 11 sizes, incl. phones held sideways; 1.5× cap | `e2e/layout.spec.js` |
+| card, "Watch again" and the language switch on screen and apart at 11 sizes, incl. phones held sideways; 1.5× cap | `e2e/layout.spec.js` |
 | text stays put when the web fonts swap in (incl. the 412 px role wrap, Firefox fallbacks) | `e2e/fonts.spec.js` |
 | logo: preloaded first, placeholder then fade, failure keeps the disc, works without JS | `e2e/logo.spec.js` |
 | scene starts after the card's paint and fonts; seeded; holds still with reduced motion; restarts when it's turned off; stops in a hidden tab; "Watch again" | `e2e/scene.spec.js` |

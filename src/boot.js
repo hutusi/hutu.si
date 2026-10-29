@@ -5,6 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const card = $('card');
   const turn = $('turn');
+  const now = $('now');
   let liftTimer;
 
   // Only the visible face is reachable by keyboard and assistive technology.
@@ -13,7 +14,11 @@
     $('front').inert = en;
     $('back').inert = !en;
     root.lang = en ? 'en' : 'zh-Hans';
-    turn.textContent = en ? '翻回中文 · Flip to Chinese' : 'Flip to English · 翻到英文';
+    // The language switch shows the side you're on, and offers the other.
+    now.textContent = en ? 'English' : '中文';
+    now.lang = en ? 'en' : 'zh-Hans';
+    turn.textContent = en ? '中文' : 'English';
+    turn.lang = en ? 'zh-Hans' : 'en';
   };
   const flip = () => {
     root.classList.toggle('en');
@@ -23,6 +28,7 @@
     liftTimer = setTimeout(() => card.classList.remove('lift'), 420);
   };
   sync();
+  $('lang').hidden = false;
   turn.addEventListener('click', flip);
   card.addEventListener('click', (e) => {
     if (!e.target.closest('a, button, img, .pop')) flip();

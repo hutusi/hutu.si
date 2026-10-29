@@ -136,8 +136,9 @@ page draws nothing.
 **Decision.**
 - **Real content.** Real text, headings, lists and links.
 - **One side at a time.** The hidden side is `inert`, and `<html lang>` follows the visible side.
-- **Keyboard.** A flip button appears on keyboard focus, and the popup works by keyboard and
-  closes with Escape, even while hovered.
+- **Keyboard.** The language switch is always shown and is the first stop when tabbing in. (Shown,
+  it also tells mouse and touch visitors that there is another side.) The popup works by keyboard
+  and closes with Escape, even while hovered.
 - **Motion and contrast.** Reduced motion shows the finished scene, still, and the card doesn't
   turn when flipped: its sides cross-fade in place over 0.3 s. Small text meets WCAG AA
   contrast.

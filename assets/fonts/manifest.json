@@ -9,8 +9,8 @@
   "zhuque-fangsong": {
     "family": "Zhuque Fangsong",
     "weight": 400,
-    "chars": "「」・一中众作信公再写刊到勇博发号周品回奇好客开微心搜文智次涂看翻者胡英说",
-    "bytes": 11908,
+    "chars": "「」・一中众作信公再写刊勇博发号周品奇好客开微心搜文智次涂看者胡说",
+    "bytes": 10456,
     "source": "https://github.com/TrionesType/zhuque/releases/download/v0.212/ZhuqueFangsong-v0.212.zip"
   },
   "cormorant-garamond-700": {
@@ -30,8 +30,8 @@
   "eb-garamond": {
     "family": "EB Garamond",
     "weight": 400,
-    "chars": ".:@BCDEFHIJWabcdeghijklmnoprstuvwy· ",
-    "bytes": 8400,
+    "chars": "./:@BCDEHIJWabcdeghijklmnoprstuvwy· ",
+    "bytes": 8268,
     "source": "https://raw.githubusercontent.com/google/fonts/f8c1d3d6cc75e30d77130bdcbfbff27e3b6233fe/ofl/ebgaramond/EBGaramond%5Bwght%5D.ttf"
   }
 }

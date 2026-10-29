@@ -234,17 +234,30 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .wx:hover:not(.shut) .pop { opacity: 1; transform: translate(-50%, 0); visibility: visible; transition-delay: 0s; }
 }
 
-/* Keyboard-only flip control: invisible until focused. */
-.turn {
-  position: absolute; left: 0; bottom: 100%; margin-bottom: 14px; z-index: 2;
-  font-size: 15px; line-height: 1; padding: 6px 2px; color: rgba(47, 40, 35, .75); white-space: nowrap;
-  clip-path: inset(50%); opacity: 0;
-}
-.turn:focus-visible { clip-path: none; opacity: 1; }
-
-/* In the stage's corner, as designed, unless the viewport crops it (see --cut-* in head.js). */
-.again {
+/* The language switch: the side you're on, and the other one to flip to. In the stage's corner,
+   unless the viewport crops it (see --cut-* in head.js), with "Watch again" beside it. Its width
+   is fixed, so nothing beside it moves when the fonts swap in. boot.js shows it, as it needs
+   boot.js to work. */
+.lang {
   position: absolute; right: max(36px, calc(var(--cut-r, 0px) + 16px)); bottom: max(28px, calc(var(--cut-b, 0px) + 12px));
+  display: flex; align-items: center; justify-content: flex-end; width: 116px; height: 44px;
+  font-size: 15px; color: rgba(47, 40, 35, .68); white-space: nowrap;
+}
+.lang[hidden] { display: none; }
+.lang::before { content: ''; width: 1px; height: 14px; margin-right: auto; background: rgba(47, 40, 35, .22); }
+.now { order: 1; color: rgba(47, 40, 35, .9); }
+.slash { order: 2; margin: 0 .4em; color: rgba(47, 40, 35, .4); }
+.turn {
+  order: 3; height: 44px; padding: 0 2px;
+  text-decoration: underline 1px rgba(47, 40, 35, .35); text-underline-offset: 4px;
+  transition: text-decoration-color .2s ease, color .2s ease;
+}
+.turn:hover { text-decoration-color: currentColor; color: rgba(47, 40, 35, .82); }
+.en .now { order: 3; }
+.en .turn { order: 1; }
+
+.again {
+  position: absolute; right: calc(max(36px, var(--cut-r, 0px) + 16px) + 136px); bottom: max(28px, calc(var(--cut-b, 0px) + 12px));
   height: 44px; padding: 0 4px;
   font-size: 15px; line-height: 44px; color: rgba(47, 40, 35, .68); /* the design's .55 is below 4.5:1 */
   text-decoration: underline 1px transparent; text-underline-offset: 4px;
@@ -270,7 +283,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   .seal { width: 46px; height: 46px; top: var(--seal-t); }
   .front .seal { left: auto; right: 36px; }
   .back .seal { left: 36px; }
-  .again { right: 0; left: 0; bottom: auto; top: 766px; margin: 0 auto; width: max-content; padding: 0 12px; }
+  /* Under the card: the language switch at its left edge, "Watch again" at its right. */
+  .lang { right: auto; left: 20px; bottom: auto; top: 766px; width: auto; }
+  .lang::before { display: none; }
+  .again { right: 20px; bottom: auto; top: 766px; padding: 0; }
   .again:hover { color: rgba(47, 40, 35, .68); }
   .again:active { text-decoration-color: currentColor; }
 
